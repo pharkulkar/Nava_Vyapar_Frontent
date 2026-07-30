@@ -1,0 +1,33 @@
+.login-page {
+  @apply min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 p-4;
+}
+
+.login-card {
+  @apply w-full max-w-md bg-white dark:bg-surface-dark rounded-2xl shadow-2xl p-8;
+}
+
+.login-brand {
+  @apply flex flex-col items-center mb-8;
+
+  .brand-logo {
+    @apply w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center mb-3;
+    mat-icon { @apply text-white text-4xl; font-size: 36px; }
+  }
+
+  .brand-title {
+    @apply text-2xl font-bold text-gray-900 dark:text-white;
+  }
+
+  .brand-subtitle {
+    @apply text-sm text-gray-500 dark:text-white/60 mt-1;
+  }
+}
+
+.login-form {
+  @apply flex flex-col gap-4;
+}
+
+.error-banner {
+  @apply flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200;
+  mat-icon { @apply text-base; font-size: 18px; }
+}

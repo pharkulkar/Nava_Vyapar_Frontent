@@ -1,0 +1,47 @@
+.app-header {
+  @apply flex items-center justify-between px-4 h-16 bg-white border-b border-gray-200
+         sticky top-0 z-[90] transition-colors duration-200;
+
+  &.dark {
+    @apply bg-surface-dark border-white/10;
+    .user-name, .label { @apply text-white/80; }
+  }
+}
+
+.header-left {
+  @apply flex items-center gap-2;
+}
+
+.header-right {
+  @apply flex items-center gap-2;
+}
+
+.online-badge {
+  @apply flex items-center gap-1.5 text-xs font-medium text-green-600 px-2 py-1 rounded-full bg-green-50;
+
+  .dot {
+    @apply w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse;
+  }
+
+  &.offline {
+    @apply text-red-600 bg-red-50;
+    .dot { @apply bg-red-500; }
+  }
+}
+
+.desktop-badge {
+  @apply flex items-center gap-1 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full;
+}
+
+.user-menu-trigger {
+  @apply flex items-center gap-2 rounded-lg px-2 py-1;
+
+  .user-avatar {
+    @apply w-8 h-8 rounded-full bg-primary-600 text-white text-xs font-bold
+           flex items-center justify-center shrink-0;
+  }
+
+  .user-name {
+    @apply text-sm font-medium text-gray-700 max-w-[120px] truncate;
+  }
+}

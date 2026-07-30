@@ -1,0 +1,27 @@
+# Angular
+dist/
+.angular/
+node_modules/
+
+# Tauri
+src-tauri/target/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

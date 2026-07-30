@@ -1,0 +1,58 @@
+.sidebar-container {
+  @apply flex flex-col h-full bg-sidebar text-white transition-all duration-[250ms] ease-in-out;
+  width: 260px;
+  min-height: 100vh;
+  overflow: hidden;
+
+  &.collapsed {
+    width: 64px;
+
+    .brand-name,
+    .nav-label,
+    .nav-chevron,
+    .nav-children { display: none; }
+
+    .nav-item { justify-content: center; padding: 0.75rem; }
+  }
+}
+
+.sidebar-brand {
+  @apply flex items-center gap-3 px-4 py-5 border-b border-white/10;
+
+  .brand-icon {
+    @apply flex items-center justify-center w-9 h-9 rounded-lg bg-primary-600 shrink-0;
+    mat-icon { @apply text-white text-xl; }
+  }
+
+  .brand-name {
+    @apply text-base font-semibold tracking-wide whitespace-nowrap;
+  }
+}
+
+.sidebar-nav {
+  @apply flex flex-col gap-0.5 p-2 flex-1 overflow-y-auto;
+}
+
+.nav-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+         text-white/70 hover:text-white hover:bg-sidebar-hover
+         transition-colors duration-150 cursor-pointer w-full text-left;
+
+  &.active {
+    @apply text-white bg-primary-600/20 border-l-2 border-primary-400;
+  }
+
+  .nav-icon { @apply text-xl shrink-0; font-size: 20px; }
+  .nav-label { @apply flex-1 whitespace-nowrap; }
+  .nav-chevron { @apply text-base ml-auto; font-size: 18px; }
+}
+
+.nav-group-trigger { @apply border-none bg-transparent; }
+
+.nav-child {
+  @apply pl-10 py-2 text-xs;
+}
+
+.nav-divider {
+  @apply border-white/10 my-2;
+}

@@ -1,0 +1,24 @@
+.app-shell {
+  @apply flex h-screen overflow-hidden bg-gray-50;
+
+  &.dark {
+    @apply bg-surface-dark;
+  }
+}
+
+.app-sidebar {
+  @apply shrink-0 z-[100] h-screen sticky top-0;
+  transition: width 250ms ease-in-out;
+}
+
+.sidebar-overlay {
+  @apply fixed inset-0 bg-black/50 z-[80] md:hidden;
+}
+
+.app-main {
+  @apply flex flex-col flex-1 min-w-0 overflow-hidden;
+}
+
+.app-content {
+  @apply flex-1 overflow-y-auto p-6;
+}
