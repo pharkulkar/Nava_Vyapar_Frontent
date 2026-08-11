@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Nava Vyapar",
+  "productName": "NavaVyapar",
   "version": "0.1.0",
   "identifier": "in.navavyapar.app",
   "build": {
@@ -36,7 +36,28 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": null
+    },
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "nsis": {
+        "installMode": "perMachine",
+        "languages": ["English"],
+        "displayLanguageSelector": false
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libssl3"]
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    }
   },
   "plugins": {
     "shell": {
