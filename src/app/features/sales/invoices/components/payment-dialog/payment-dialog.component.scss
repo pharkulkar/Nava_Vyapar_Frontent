@@ -1,0 +1,34 @@
+.invoice-summary {
+  background: var(--mat-sys-surface-container);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  padding: 4px 0;
+  color: var(--mat-sys-on-surface-variant);
+
+  .bold   { font-weight: 600; color: var(--mat-sys-on-surface); }
+  .paid   { color: #22c55e; font-weight: 500; }
+
+  &.balance {
+    font-weight: 700;
+    color: #ef4444;
+    font-size: 0.95rem;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    margin-top: 6px;
+    padding-top: 8px;
+  }
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.full-width { width: 100%; }

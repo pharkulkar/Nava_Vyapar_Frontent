@@ -1,0 +1,209 @@
+.view-dialog {
+  padding: 0;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inv-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+// ── Meta ──────────────────────────────────────────────────────────────────────
+.invoice-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+}
+
+.meta-block {
+  &.right { text-align: right; }
+}
+
+.meta-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0 0 6px;
+}
+
+.meta-value {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface);
+  margin: 2px 0;
+  &.bold { font-weight: 600; font-size: 0.95rem; }
+  &.overdue { color: #ef4444; font-weight: 600; }
+}
+
+.meta-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-bottom: 6px;
+
+  .meta-label { margin: 0; }
+  .meta-value { margin: 0; min-width: 100px; text-align: right; }
+}
+
+// ── Items Table ───────────────────────────────────────────────────────────────
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin: 0 0 0;
+
+  th {
+    padding: 10px 12px;
+    background: var(--mat-sys-surface-container);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--mat-sys-on-surface-variant);
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    vertical-align: middle;
+  }
+
+  .text-right { text-align: right; }
+  .row-num { color: var(--mat-sys-on-surface-variant); width: 32px; }
+}
+
+.item-name { font-weight: 500; margin: 0; }
+.item-sku  { font-size: 0.75rem; color: var(--mat-sys-on-surface-variant); margin: 2px 0 0; }
+.item-total { font-weight: 600; }
+
+// ── Totals ────────────────────────────────────────────────────────────────────
+.totals-section {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+}
+
+.totals-block {
+  width: 300px;
+
+  mat-divider { margin: 8px 0; }
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+
+  &.discount { color: #22c55e; }
+  &.grand    { font-size: 1rem; font-weight: 700; color: var(--mat-sys-on-surface); padding: 8px 0 4px; }
+  &.paid     { color: #22c55e; font-weight: 500; }
+  &.balance  { color: #ef4444; font-weight: 600; }
+}
+
+// ── Payments ──────────────────────────────────────────────────────────────────
+.payments-section {
+  padding: 0 24px 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  margin-top: 4px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 14px 0 10px;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; color: var(--mat-sys-primary); }
+}
+
+.payment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  &:last-child { border-bottom: none; }
+}
+
+.pay-icon { color: #22c55e; font-size: 18px; width: 18px; height: 18px; }
+.pay-info { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 0.875rem; }
+.pay-amount { font-weight: 600; }
+.pay-method { color: var(--mat-sys-on-surface-variant); }
+.pay-ref    { color: var(--mat-sys-on-surface-variant); font-size: 0.8rem; }
+.pay-date   { font-size: 0.8rem; color: var(--mat-sys-on-surface-variant); }
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+.notes-section {
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.notes-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mat-sys-on-surface-variant); margin: 0 0 4px; }
+.notes-text  { font-size: 0.875rem; color: var(--mat-sys-on-surface-variant); margin: 0; }
+
+// ── Footer ────────────────────────────────────────────────────────────────────
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+// ── Status Badge ──────────────────────────────────────────────────────────────
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  .status-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &.draft     { background: #f1f5f9; color: #475569; }
+  &.sent      { background: #dbeafe; color: #1d4ed8; }
+  &.paid      { background: #dcfce7; color: #15803d; }
+  &.partial   { background: #fef3c7; color: #b45309; }
+  &.overdue   { background: #fee2e2; color: #b91c1c; }
+  &.cancelled { background: #f1f5f9; color: #94a3b8; }
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+@media print {
+  .no-print { display: none !important; }
+
+  .view-dialog {
+    padding: 0;
+    box-shadow: none;
+  }
+}

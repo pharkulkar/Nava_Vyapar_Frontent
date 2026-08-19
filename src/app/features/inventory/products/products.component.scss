@@ -1,0 +1,123 @@
+.stats-row {
+  @apply grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5;
+}
+
+.stat-pill {
+  @apply flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark-elevated
+         border border-gray-100 dark:border-white/10 shadow-card;
+  mat-icon { @apply text-2xl shrink-0; font-size: 24px; }
+  .stat-pill-value { @apply text-xl font-bold text-gray-900 dark:text-white leading-none; }
+  .stat-pill-label { @apply text-xs text-gray-500 dark:text-white/60 mt-0.5; }
+}
+
+.filters-bar {
+  @apply flex flex-wrap items-center gap-3 mb-4;
+  .search-field { @apply flex-1 min-w-[240px]; }
+  .filter-field { @apply w-44; }
+  .low-stock-btn {
+    @apply h-14 px-4 text-sm;
+    &.active { @apply bg-amber-50 border-amber-400 text-amber-700; }
+  }
+}
+
+.bulk-action-bar {
+  @apply flex items-center gap-3 px-4 py-2.5 mb-3 rounded-xl
+         bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700;
+}
+
+.table-card {
+  @apply relative bg-white dark:bg-surface-dark-elevated rounded-xl
+         border border-gray-100 dark:border-white/10 shadow-card overflow-hidden;
+}
+
+.table-loading {
+  @apply absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-surface-dark/70 z-10;
+}
+
+.empty-state {
+  @apply flex flex-col items-center justify-center gap-3 py-20 text-center;
+  mat-icon { @apply text-6xl text-gray-200 dark:text-white/10; font-size: 64px; }
+  h3 { @apply text-lg font-semibold text-gray-700 dark:text-white/80; }
+  p  { @apply text-sm text-gray-400 dark:text-white/50; }
+}
+
+.products-table {
+  @apply w-full;
+
+  th.mat-header-cell {
+    @apply text-xs font-semibold text-gray-500 dark:text-white/60 uppercase tracking-wide
+           bg-gray-50 dark:bg-white/5 border-b border-gray-100 dark:border-white/10 px-4 py-3;
+  }
+
+  td.mat-cell {
+    @apply text-sm text-gray-700 dark:text-white/80 px-4 py-3
+           border-b border-gray-50 dark:border-white/5;
+  }
+
+  .table-row {
+    @apply transition-colors duration-100 hover:bg-gray-50 dark:hover:bg-white/5;
+    &.selected { @apply bg-primary-50/50 dark:bg-primary-900/10; }
+  }
+}
+
+.product-cell {
+  @apply flex items-center gap-3;
+  .product-avatar {
+    @apply w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0;
+    &.blue   { @apply bg-blue-100 text-blue-700; }
+    &.purple { @apply bg-purple-100 text-purple-700; }
+    &.green  { @apply bg-green-100 text-green-700; }
+    &.orange { @apply bg-orange-100 text-orange-700; }
+    &.cyan   { @apply bg-cyan-100 text-cyan-700; }
+    &.gray   { @apply bg-gray-100 text-gray-700; }
+    &.pink   { @apply bg-pink-100 text-pink-700; }
+    &.teal   { @apply bg-teal-100 text-teal-700; }
+    &.yellow { @apply bg-yellow-100 text-yellow-700; }
+    &.slate  { @apply bg-slate-100 text-slate-700; }
+  }
+  .product-name { @apply text-sm font-medium text-gray-900 dark:text-white; }
+  .product-sku  { @apply text-xs text-gray-400 dark:text-white/40 font-mono; }
+}
+
+.category-chip {
+  @apply px-2.5 py-1 rounded-full text-xs font-medium
+         bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/70;
+}
+
+.stock-cell { @apply flex items-center gap-2; }
+
+.stock-value {
+  @apply text-sm font-medium;
+  &.in-stock     { @apply text-gray-800 dark:text-white/80; }
+  &.low-stock    { @apply text-amber-600; }
+  &.out-of-stock { @apply text-red-500; }
+}
+
+.low-stock-badge {
+  @apply px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700;
+}
+
+.out-stock-badge {
+  @apply px-1.5 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-600;
+}
+
+.price-text { @apply text-sm text-gray-700 dark:text-white/80 font-mono; }
+
+.tax-chip {
+  @apply px-2 py-0.5 rounded text-xs font-medium bg-violet-50 text-violet-700
+         dark:bg-violet-900/30 dark:text-violet-300;
+}
+
+.status-badge {
+  @apply px-2.5 py-1 rounded-full text-xs font-semibold capitalize;
+  &.active   { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
+  &.inactive { @apply bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400; }
+  &.draft    { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
+}
+
+.action-btn { @apply opacity-0 transition-opacity duration-150; }
+.table-row:hover .action-btn { @apply opacity-100; }
+
+.table-paginator {
+  @apply border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5;
+}

@@ -1,0 +1,63 @@
+<h2 mat-dialog-title>Record Payment</h2>
+
+<mat-dialog-content>
+  <div class="invoice-summary">
+    <div class="summary-row">
+      <span>Invoice</span>
+      <span class="bold">{{ invoice.invoiceNumber }}</span>
+    </div>
+    <div class="summary-row">
+      <span>Grand Total</span>
+      <span>{{ invoice.grandTotal | currency:'INR':'symbol':'1.2-2' }}</span>
+    </div>
+    <div class="summary-row">
+      <span>Already Paid</span>
+      <span class="paid">{{ invoice.amountPaid | currency:'INR':'symbol':'1.2-2' }}</span>
+    </div>
+    <div class="summary-row balance">
+      <span>Balance Due</span>
+      <span>{{ invoice.balanceDue | currency:'INR':'symbol':'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <div class="form-fields">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Amount *</mat-label>
+      <span matPrefix>₹&nbsp;</span>
+      <input matInput type="number" [(ngModel)]="form.amount" [max]="invoice.balanceDue" min="1" />
+      <button mat-icon-button matSuffix matTooltip="Pay full balance" (click)="form.amount = invoice.balanceDue">
+        <mat-icon>done_all</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Payment Method *</mat-label>
+      <mat-select [(ngModel)]="form.method">
+        <mat-option *ngFor="let m of paymentMethods" [value]="m.value">{{ m.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Payment Date *</mat-label>
+      <input matInput type="date" [(ngModel)]="form.date" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reference / Transaction ID</mat-label>
+      <input matInput [(ngModel)]="form.reference" placeholder="UPI ref, cheque no., etc." />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Note</mat-label>
+      <input matInput [(ngModel)]="form.note" placeholder="Optional note" />
+    </mat-form-field>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button mat-dialog-close>Cancel</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="saving()">
+    <mat-spinner diameter="18" *ngIf="saving()"></mat-spinner>
+    {{ saving() ? 'Saving...' : 'Record Payment' }}
+  </button>
+</mat-dialog-actions>

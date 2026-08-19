@@ -1,0 +1,291 @@
+<div class="form-page">
+  <!-- Top Bar -->
+  <div class="form-topbar">
+    <button mat-icon-button (click)="goBack()" matTooltip="Back to Invoices">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="topbar-title">
+      <h1>{{ isEdit ? 'Edit Invoice' : 'New Invoice' }}</h1>
+      <span class="inv-number" *ngIf="isEdit">{{ invoiceNumber }}</span>
+    </div>
+    <div class="topbar-actions">
+      <button mat-stroked-button (click)="saveDraft()" [disabled]="saving()">
+        <mat-icon>save</mat-icon> Save Draft
+      </button>
+      <button mat-flat-button color="primary" (click)="saveAndSend()" [disabled]="saving()">
+        <mat-spinner diameter="18" *ngIf="saving()"></mat-spinner>
+        <mat-icon *ngIf="!saving()">send</mat-icon>
+        {{ saving() ? 'Saving...' : 'Save & Send' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="form-body">
+    <!-- Left Column -->
+    <div class="form-left">
+
+      <!-- Customer Details -->
+      <div class="form-section">
+        <h2 class="section-title"><mat-icon>person</mat-icon> Customer Details</h2>
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Customer Name *</mat-label>
+            <input matInput [(ngModel)]="form.customerName" placeholder="Enter customer name" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Phone</mat-label>
+            <input matInput [(ngModel)]="form.customerPhone" placeholder="9876543210" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput [(ngModel)]="form.customerEmail" placeholder="customer@email.com" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Address</mat-label>
+            <textarea matInput [(ngModel)]="form.customerAddress" rows="2" placeholder="Street, City, State, PIN"></textarea>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>GSTIN</mat-label>
+            <input matInput [(ngModel)]="form.customerGstin" placeholder="27AAPFU0939F1ZV" />
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Invoice Details -->
+      <div class="form-section">
+        <h2 class="section-title"><mat-icon>receipt</mat-icon> Invoice Details</h2>
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Issue Date *</mat-label>
+            <input matInput type="date" [(ngModel)]="form.issueDate" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Due Date *</mat-label>
+            <input matInput type="date" [(ngModel)]="form.dueDate" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Payment Terms</mat-label>
+            <mat-select [(ngModel)]="selectedTerms" (ngModelChange)="applyTerms($event)">
+              <mat-option value="0">Due on Receipt</mat-option>
+              <mat-option value="7">Net 7 Days</mat-option>
+              <mat-option value="15">Net 15 Days</mat-option>
+              <mat-option value="30">Net 30 Days</mat-option>
+              <mat-option value="45">Net 45 Days</mat-option>
+              <mat-option value="60">Net 60 Days</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="form-section">
+        <h2 class="section-title"><mat-icon>inventory_2</mat-icon> Line Items</h2>
+
+        <!-- Product Search Bar -->
+        <div class="product-search-wrapper">
+          <div class="product-search-box">
+            <mat-icon class="search-icon">search</mat-icon>
+            <input
+              #searchInput
+              class="product-search-input"
+              [(ngModel)]="productSearchQuery"
+              (ngModelChange)="onProductSearch($event)"
+              (focus)="showDropdown = true"
+              (keydown.escape)="closeDropdown()"
+              (keydown.arrowDown)="navigateDropdown(1)"
+              (keydown.arrowUp)="navigateDropdown(-1)"
+              (keydown.enter)="selectHighlighted()"
+              placeholder="Search product by name or SKU..."
+              autocomplete="off"
+            />
+            <mat-spinner diameter="18" *ngIf="productSearchLoading()" class="search-spinner"></mat-spinner>
+            <button mat-icon-button *ngIf="productSearchQuery && !productSearchLoading()" (click)="clearProductSearch()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <!-- Dropdown Results -->
+          <div class="product-dropdown" *ngIf="showDropdown && productResults().length > 0">
+            <div
+              *ngFor="let p of productResults(); let i = index"
+              class="product-result-item"
+              [class.highlighted]="highlightedIndex === i"
+              (mouseenter)="highlightedIndex = i"
+              (click)="addProductToInvoice(p)"
+            >
+              <div class="result-avatar">{{ p.name.charAt(0) }}</div>
+              <div class="result-info">
+                <span class="result-name">{{ p.name }}</span>
+                <span class="result-sku">{{ p.sku }}</span>
+              </div>
+              <div class="result-right">
+                <span class="result-price">{{ p.sellingPrice | currency:'INR':'symbol':'1.0-0' }}</span>
+                <span class="result-stock" [class.low]="p.stockQuantity <= 5" [class.out]="p.stockQuantity === 0">
+                  {{ p.stockQuantity === 0 ? 'Out of stock' : 'Stock: ' + p.stockQuantity }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- No results -->
+          <div class="product-dropdown no-results" *ngIf="showDropdown && productSearchQuery.length > 1 && productResults().length === 0 && !productSearchLoading()">
+            <mat-icon>search_off</mat-icon>
+            <span>No products found for "{{ productSearchQuery }}"</span>
+          </div>
+        </div>
+
+        <!-- Line Items Table -->
+        <div class="line-items-table" *ngIf="lineItems().length > 0">
+          <div class="line-items-header">
+            <span class="col-product">Product</span>
+            <span class="col-qty">Qty</span>
+            <span class="col-price">Unit Price</span>
+            <span class="col-disc">Disc %</span>
+            <span class="col-tax">Tax %</span>
+            <span class="col-total">Total</span>
+            <span class="col-del"></span>
+          </div>
+
+          <div class="line-item-row" *ngFor="let item of lineItems(); let i = index">
+            <div class="col-product">
+              <p class="item-name">{{ item.productName }}</p>
+              <p class="item-sku">{{ item.sku }} · {{ item.unit }}</p>
+            </div>
+
+            <div class="col-qty">
+              <div class="qty-control">
+                <button mat-icon-button (click)="changeQty(i, -1)" [disabled]="item.quantity <= 1">
+                  <mat-icon>remove</mat-icon>
+                </button>
+                <input
+                  class="qty-input"
+                  type="number"
+                  [value]="item.quantity"
+                  (change)="onQtyChange(i, $event)"
+                  min="1"
+                />
+                <button mat-icon-button (click)="changeQty(i, 1)">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="col-price">
+              <input
+                class="price-input"
+                type="number"
+                [value]="item.unitPrice"
+                (change)="onPriceChange(i, $event)"
+                min="0"
+              />
+            </div>
+
+            <div class="col-disc">
+              <input
+                class="price-input"
+                type="number"
+                [value]="item.discountPercent"
+                (change)="onDiscountChange(i, $event)"
+                min="0"
+                max="100"
+              />
+            </div>
+
+            <div class="col-tax">
+              <span class="tax-badge">{{ item.taxRate }}%</span>
+            </div>
+
+            <div class="col-total">
+              <span class="item-total">{{ item.total | currency:'INR':'symbol':'1.0-0' }}</span>
+            </div>
+
+            <div class="col-del">
+              <button mat-icon-button color="warn" (click)="removeLineItem(i)" matTooltip="Remove">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty line items -->
+        <div class="line-items-empty" *ngIf="lineItems().length === 0">
+          <mat-icon>add_shopping_cart</mat-icon>
+          <p>Search and add products above to build your invoice</p>
+        </div>
+      </div>
+
+      <!-- Notes & Terms -->
+      <div class="form-section">
+        <h2 class="section-title"><mat-icon>notes</mat-icon> Notes & Terms</h2>
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Notes (visible to customer)</mat-label>
+            <textarea matInput [(ngModel)]="form.notes" rows="3" placeholder="Thank you for your business!"></textarea>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="col-span-2">
+            <mat-label>Terms & Conditions</mat-label>
+            <textarea matInput [(ngModel)]="form.termsAndConditions" rows="2" placeholder="Payment due within 30 days."></textarea>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column — Totals -->
+    <div class="form-right">
+      <div class="totals-card">
+        <h2 class="section-title"><mat-icon>calculate</mat-icon> Summary</h2>
+
+        <div class="totals-row">
+          <span>Subtotal</span>
+          <span>{{ totals().subtotal | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="totals-row discount" *ngIf="totals().totalDiscount > 0">
+          <span>Discount</span>
+          <span>- {{ totals().totalDiscount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="totals-row">
+          <span>Taxable Amount</span>
+          <span>{{ totals().taxableAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+
+        <!-- Tax breakdown -->
+        <div class="tax-breakdown" *ngIf="taxBreakdown().length > 0">
+          <div class="totals-row tax-row" *ngFor="let t of taxBreakdown()">
+            <span>GST {{ t.rate }}%</span>
+            <span>{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <mat-divider class="totals-divider" />
+
+        <div class="totals-row grand-total">
+          <span>Grand Total</span>
+          <span>{{ totals().grandTotal | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+
+        <div class="items-count">
+          <mat-icon>shopping_cart</mat-icon>
+          {{ lineItems().length }} item{{ lineItems().length !== 1 ? 's' : '' }},
+          {{ totalQty() }} unit{{ totalQty() !== 1 ? 's' : '' }}
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions-card">
+        <h2 class="section-title"><mat-icon>bolt</mat-icon> Quick Actions</h2>
+        <button mat-stroked-button class="w-full mb-2" (click)="applyGlobalDiscount()">
+          <mat-icon>local_offer</mat-icon> Apply Global Discount
+        </button>
+        <button mat-stroked-button class="w-full" (click)="clearAllItems()" [disabled]="lineItems().length === 0" color="warn">
+          <mat-icon>clear_all</mat-icon> Clear All Items
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,197 @@
+:host {
+  display: block;
+  padding: 24px;
+}
+
+// ── Summary Row ──────────────────────────────────────────────────────────────
+.summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  padding: 14px 18px;
+  flex: 1;
+  min-width: 140px;
+
+  &.wide { min-width: 200px; }
+}
+
+.summary-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+
+.summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+  line-height: 1.2;
+}
+
+.summary-label {
+  font-size: 0.72rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin-top: 2px;
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .search-field { flex: 1; min-width: 260px; }
+  .filter-field { width: 160px; }
+  .date-field   { width: 150px; }
+
+  mat-form-field { margin-bottom: -1.25em; }
+}
+
+// ── Table Card ───────────────────────────────────────────────────────────────
+.table-card {
+  position: relative;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--mat-sys-surface-rgb, 255 255 255) / 0.7);
+  z-index: 10;
+  min-height: 200px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  gap: 12px;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon { font-size: 56px; width: 56px; height: 56px; opacity: 0.4; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+  p  { font-size: 0.875rem; margin: 0; }
+}
+
+.invoices-table {
+  width: 100%;
+  background: transparent;
+}
+
+.table-row {
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: var(--mat-sys-surface-container); }
+}
+
+.table-paginator {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  background: transparent;
+}
+
+// ── Cells ────────────────────────────────────────────────────────────────────
+.inv-number-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--mat-sys-primary);
+  font-size: 0.875rem;
+  padding: 0;
+  &:hover { text-decoration: underline; }
+}
+
+.customer-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.customer-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.customer-name  { font-size: 0.875rem; font-weight: 500; }
+.customer-phone { font-size: 0.75rem; color: var(--mat-sys-on-surface-variant); }
+
+.amount-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.balance-text {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #ef4444;
+  &.zero { color: #22c55e; }
+}
+
+.overdue-date { color: #ef4444; font-weight: 500; }
+
+// ── Status Badge ─────────────────────────────────────────────────────────────
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+
+  .status-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &.draft     { background: #f1f5f9; color: #475569; }
+  &.sent      { background: #dbeafe; color: #1d4ed8; }
+  &.paid      { background: #dcfce7; color: #15803d; }
+  &.partial   { background: #fef3c7; color: #b45309; }
+  &.overdue   { background: #fee2e2; color: #b91c1c; }
+  &.cancelled { background: #f1f5f9; color: #94a3b8; }
+}
+
+:host-context(html.dark) {
+  .status-badge {
+    &.draft     { background: #1e293b; color: #94a3b8; }
+    &.sent      { background: #1e3a5f; color: #93c5fd; }
+    &.paid      { background: #14532d; color: #86efac; }
+    &.partial   { background: #451a03; color: #fcd34d; }
+    &.overdue   { background: #450a0a; color: #fca5a5; }
+    &.cancelled { background: #1e293b; color: #64748b; }
+  }
+}
