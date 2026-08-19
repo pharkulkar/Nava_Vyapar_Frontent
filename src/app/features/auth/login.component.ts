@@ -1,11 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgIf } from '@angular/common';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/services/auth.service';
@@ -15,67 +11,143 @@ import { AppStore } from '../../core/store/app.store';
   selector: 'nv-login',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ReactiveFormsModule, NgIf, RouterLink,
-    MatFormFieldModule, MatInputModule, MatButtonModule,
-    MatIconModule, MatCheckboxModule, MatProgressSpinnerModule,
-  ],
+  imports: [ReactiveFormsModule, NgIf, RouterLink, MatIconModule, MatProgressSpinnerModule],
   template: `
-    <div class="login-page">
-      <div class="login-card">
-        <!-- Brand -->
-        <div class="login-brand">
-          <div class="brand-logo">
-            <mat-icon>storefront</mat-icon>
+    <div class="auth-page">
+      <!-- Brand panel -->
+      <aside class="auth-aside">
+        <div class="auth-aside-inner">
+          <div class="brand">
+            <div class="brand-logo">
+              <mat-icon>storefront</mat-icon>
+            </div>
+            <span class="brand-name">Nava Vyapar</span>
           </div>
-          <h1 class="brand-title">Nava Vyapar</h1>
-          <p class="brand-subtitle">Enterprise Business Management</p>
+
+          <h2 class="aside-title">Welcome back to your business hub.</h2>
+          <p class="aside-subtitle">
+            Sign in to manage invoices, inventory, purchases and accounting — all in one place.
+          </p>
+
+          <ul class="aside-features">
+            <li>
+              <mat-icon>receipt_long</mat-icon>
+              <span>Create &amp; track GST invoices in seconds</span>
+            </li>
+            <li>
+              <mat-icon>inventory_2</mat-icon>
+              <span>Keep your stock and inventory in sync</span>
+            </li>
+            <li>
+              <mat-icon>insights</mat-icon>
+              <span>Real-time insights and business reports</span>
+            </li>
+          </ul>
+
+          <div class="aside-footer">Trusted by 10,000+ growing businesses</div>
         </div>
+      </aside>
 
-        <!-- Form -->
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="login-form">
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" placeholder="you@company.com" />
-            <mat-icon matPrefix>email</mat-icon>
-            <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
-            <mat-error *ngIf="form.get('email')?.hasError('email')">Invalid email</mat-error>
-          </mat-form-field>
+      <!-- Form panel -->
+      <main class="auth-main">
+        <div class="auth-card">
+          <header class="auth-header">
+            <h1 class="auth-title">Sign in</h1>
+            <p class="auth-subtitle">Enter your credentials to continue</p>
+          </header>
 
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Password</mat-label>
-            <input matInput [type]="showPassword ? 'text' : 'password'" formControlName="password" />
-            <mat-icon matPrefix>lock</mat-icon>
-            <button mat-icon-button matSuffix type="button" (click)="showPassword = !showPassword">
-              <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+            <!-- Email -->
+            <div class="field">
+              <label class="field-label" for="email">Email</label>
+              <div
+                class="field-control"
+                [class.error]="form.get('email')?.invalid && form.get('email')?.touched"
+              >
+                <mat-icon class="field-icon">email</mat-icon>
+                <input
+                  id="email"
+                  class="field-input"
+                  type="email"
+                  formControlName="email"
+                  autocomplete="email"
+                />
+              </div>
+              <div
+                class="field-error"
+                *ngIf="form.get('email')?.invalid && form.get('email')?.touched"
+              >
+                <span *ngIf="form.get('email')?.hasError('required')">Email is required</span>
+                <span *ngIf="form.get('email')?.hasError('email')"
+                  >Enter a valid email address</span
+                >
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="field">
+              <div class="field-label-row">
+                <label class="field-label" for="password">Password</label>
+                <a routerLink="/auth/forgot-password" class="forgot-link">Forgot password?</a>
+              </div>
+              <div
+                class="field-control"
+                [class.error]="form.get('password')?.invalid && form.get('password')?.touched"
+              >
+                <mat-icon class="field-icon">lock</mat-icon>
+                <input
+                  id="password"
+                  class="field-input"
+                  [type]="showPassword ? 'text' : 'password'"
+                  formControlName="password"
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="field-toggle"
+                  (click)="showPassword = !showPassword"
+                  [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+                >
+                  <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+              </div>
+              <div
+                class="field-error"
+                *ngIf="form.get('password')?.invalid && form.get('password')?.touched"
+              >
+                <span *ngIf="form.get('password')?.hasError('required')">Password is required</span>
+                <span *ngIf="form.get('password')?.hasError('minlength')"
+                  >Use at least 8 characters</span
+                >
+              </div>
+            </div>
+
+            <label class="remember">
+              <input type="checkbox" formControlName="rememberMe" class="remember-box" />
+              <span>Remember me</span>
+            </label>
+
+            <div *ngIf="store.auth().error" class="error-banner">
+              <mat-icon>error_outline</mat-icon>
+              {{ store.auth().error }}
+            </div>
+
+            <button
+              type="submit"
+              class="submit-btn"
+              [disabled]="form.invalid || store.authLoading()"
+            >
+              <mat-spinner *ngIf="store.authLoading()" diameter="20" class="spinner" />
+              <span>{{ store.authLoading() ? 'Signing in...' : 'Sign In' }}</span>
             </button>
-            <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
-          </mat-form-field>
+          </form>
 
-          <div class="flex items-center justify-between">
-            <mat-checkbox formControlName="rememberMe" color="primary">Remember me</mat-checkbox>
-            <a routerLink="/auth/forgot-password" class="text-sm text-primary-600 hover:underline">
-              Forgot password?
-            </a>
-          </div>
-
-          <div *ngIf="store.auth().error" class="error-banner">
-            <mat-icon>error_outline</mat-icon>
-            {{ store.auth().error }}
-          </div>
-
-          <button
-            mat-flat-button
-            color="primary"
-            type="submit"
-            class="w-full h-11"
-            [disabled]="form.invalid || store.authLoading()"
-          >
-            <mat-spinner *ngIf="store.authLoading()" diameter="20" class="mr-2" />
-            {{ store.authLoading() ? 'Signing in...' : 'Sign In' }}
-          </button>
-        </form>
-      </div>
+          <p class="auth-footer">
+            Don't have an account?
+            <a routerLink="/auth/signup" class="link">Create one</a>
+          </p>
+        </div>
+      </main>
     </div>
   `,
   styleUrls: ['./login.component.scss'],

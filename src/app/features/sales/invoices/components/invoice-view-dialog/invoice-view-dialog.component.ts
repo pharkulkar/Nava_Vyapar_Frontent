@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, AfterViewInit } from '@angular/core';
+import type { AfterViewInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgFor, NgIf, CurrencyPipe, DatePipe, TitleCasePipe, NgClass } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,7 +8,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { INVOICE_STATUS_CONFIG } from '../../invoice.model';
-import { PaymentDialogComponent } from '../payment-dialog/payment-dialog.component';
 import type { Invoice } from '../../invoice.model';
 
 @Component({
@@ -15,9 +15,17 @@ import type { Invoice } from '../../invoice.model';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgFor, NgIf, NgClass, CurrencyPipe, DatePipe, TitleCasePipe,
-    MatDialogModule, MatButtonModule, MatIconModule,
-    MatDividerModule, MatTooltipModule,
+    NgFor,
+    NgIf,
+    NgClass,
+    CurrencyPipe,
+    DatePipe,
+    TitleCasePipe,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDividerModule,
+    MatTooltipModule,
   ],
   templateUrl: './invoice-view-dialog.component.html',
   styleUrls: ['./invoice-view-dialog.component.scss'],
@@ -28,7 +36,10 @@ export class InvoiceViewDialogComponent implements AfterViewInit {
   private readonly dialog = inject(MatDialog);
 
   protected readonly invoice = this.data.invoice;
-  protected readonly statusConfig = INVOICE_STATUS_CONFIG as Record<string, { label: string; color: string; icon: string }>;
+  protected readonly statusConfig = INVOICE_STATUS_CONFIG as Record<
+    string,
+    { label: string; color: string; icon: string }
+  >;
   protected readonly isOverdue =
     this.invoice.status !== 'paid' &&
     this.invoice.status !== 'cancelled' &&
@@ -40,16 +51,7 @@ export class InvoiceViewDialogComponent implements AfterViewInit {
     }
   }
 
-  print(): void { window.print(); }
-
-  recordPayment(): void {
-    this.dialogRef.close();
-    this.dialog.open(PaymentDialogComponent, {
-      data: { invoice: this.invoice },
-      width: '480px',
-      panelClass: 'nv-dialog',
-    }).afterClosed().subscribe(result => {
-      if (result) this.dialogRef.close('refresh');
-    });
+  print(): void {
+    window.print();
   }
 }

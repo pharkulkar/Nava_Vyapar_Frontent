@@ -23,35 +23,79 @@
   <div class="form-body">
     <!-- Left Column -->
     <div class="form-left">
-
       <!-- Customer Details -->
       <div class="form-section">
         <h2 class="section-title"><mat-icon>person</mat-icon> Customer Details</h2>
         <div class="form-grid">
-          <mat-form-field appearance="outline" class="col-span-2">
-            <mat-label>Customer Name *</mat-label>
-            <input matInput [(ngModel)]="form.customerName" placeholder="Enter customer name" />
-          </mat-form-field>
+          <div class="field col-span-2">
+            <label class="field-label" for="customerName">Customer Name *</label>
+            <div class="field-control">
+              <mat-icon class="field-icon">person</mat-icon>
+              <input
+                id="customerName"
+                class="field-input"
+                type="text"
+                [(ngModel)]="form.customerName"
+                placeholder="Enter customer name"
+              />
+            </div>
+          </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Phone</mat-label>
-            <input matInput [(ngModel)]="form.customerPhone" placeholder="9876543210" />
-          </mat-form-field>
+          <div class="field">
+            <label class="field-label" for="customerPhone">Phone</label>
+            <div class="field-control">
+              <mat-icon class="field-icon">phone</mat-icon>
+              <input
+                id="customerPhone"
+                class="field-input"
+                type="tel"
+                [(ngModel)]="form.customerPhone"
+                placeholder="9876543210"
+              />
+            </div>
+          </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput [(ngModel)]="form.customerEmail" placeholder="customer@email.com" />
-          </mat-form-field>
+          <div class="field">
+            <label class="field-label" for="customerEmail">Email</label>
+            <div class="field-control">
+              <mat-icon class="field-icon">email</mat-icon>
+              <input
+                id="customerEmail"
+                class="field-input"
+                type="email"
+                [(ngModel)]="form.customerEmail"
+                placeholder="customer@email.com"
+              />
+            </div>
+          </div>
 
-          <mat-form-field appearance="outline" class="col-span-2">
-            <mat-label>Address</mat-label>
-            <textarea matInput [(ngModel)]="form.customerAddress" rows="2" placeholder="Street, City, State, PIN"></textarea>
-          </mat-form-field>
+          <div class="field col-span-2">
+            <label class="field-label" for="customerAddress">Address</label>
+            <div class="field-control field-control--textarea">
+              <mat-icon class="field-icon field-icon--top">location_on</mat-icon>
+              <textarea
+                id="customerAddress"
+                class="field-textarea"
+                [(ngModel)]="form.customerAddress"
+                rows="2"
+                placeholder="Street, City, State, PIN"
+              ></textarea>
+            </div>
+          </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>GSTIN</mat-label>
-            <input matInput [(ngModel)]="form.customerGstin" placeholder="27AAPFU0939F1ZV" />
-          </mat-form-field>
+          <div class="field">
+            <label class="field-label" for="customerGstin">GSTIN</label>
+            <div class="field-control">
+              <mat-icon class="field-icon">badge</mat-icon>
+              <input
+                id="customerGstin"
+                class="field-input"
+                type="text"
+                [(ngModel)]="form.customerGstin"
+                placeholder="27AAPFU0939F1ZV"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -59,27 +103,42 @@
       <div class="form-section">
         <h2 class="section-title"><mat-icon>receipt</mat-icon> Invoice Details</h2>
         <div class="form-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Issue Date *</mat-label>
-            <input matInput type="date" [(ngModel)]="form.issueDate" />
-          </mat-form-field>
+          <div class="field">
+            <label class="field-label" for="issueDate">Issue Date *</label>
+            <div class="field-control">
+              <mat-icon class="field-icon">event</mat-icon>
+              <input id="issueDate" class="field-input" type="date" [(ngModel)]="form.issueDate" />
+            </div>
+          </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Due Date *</mat-label>
-            <input matInput type="date" [(ngModel)]="form.dueDate" />
-          </mat-form-field>
+          <div class="field">
+            <label class="field-label" for="dueDate">Due Date *</label>
+            <div class="field-control">
+              <mat-icon class="field-icon">event_available</mat-icon>
+              <input id="dueDate" class="field-input" type="date" [(ngModel)]="form.dueDate" />
+            </div>
+          </div>
 
-          <mat-form-field appearance="outline" class="col-span-2">
-            <mat-label>Payment Terms</mat-label>
-            <mat-select [(ngModel)]="selectedTerms" (ngModelChange)="applyTerms($event)">
-              <mat-option value="0">Due on Receipt</mat-option>
-              <mat-option value="7">Net 7 Days</mat-option>
-              <mat-option value="15">Net 15 Days</mat-option>
-              <mat-option value="30">Net 30 Days</mat-option>
-              <mat-option value="45">Net 45 Days</mat-option>
-              <mat-option value="60">Net 60 Days</mat-option>
-            </mat-select>
-          </mat-form-field>
+          <div class="field col-span-2">
+            <label class="field-label" for="selectedTerms">Payment Terms</label>
+            <div class="field-control">
+              <mat-icon class="field-icon">schedule</mat-icon>
+              <select
+                id="selectedTerms"
+                class="field-select"
+                [(ngModel)]="selectedTerms"
+                (ngModelChange)="applyTerms($event)"
+              >
+                <option value="0">Due on Receipt</option>
+                <option value="7">Net 7 Days</option>
+                <option value="15">Net 15 Days</option>
+                <option value="30">Net 30 Days</option>
+                <option value="45">Net 45 Days</option>
+                <option value="60">Net 60 Days</option>
+              </select>
+              <mat-icon class="select-caret">expand_more</mat-icon>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -105,7 +164,11 @@
               autocomplete="off"
             />
             <mat-spinner diameter="18" *ngIf="productSearchLoading()" class="search-spinner"></mat-spinner>
-            <button mat-icon-button *ngIf="productSearchQuery && !productSearchLoading()" (click)="clearProductSearch()">
+            <button
+              mat-icon-button
+              *ngIf="productSearchQuery && !productSearchLoading()"
+              (click)="clearProductSearch()"
+            >
               <mat-icon>close</mat-icon>
             </button>
           </div>
@@ -125,7 +188,7 @@
                 <span class="result-sku">{{ p.sku }}</span>
               </div>
               <div class="result-right">
-                <span class="result-price">{{ p.sellingPrice | currency:'INR':'symbol':'1.0-0' }}</span>
+                <span class="result-price">{{ p.sellingPrice | currency: 'INR' : 'symbol' : '1.0-0' }}</span>
                 <span class="result-stock" [class.low]="p.stockQuantity <= 5" [class.out]="p.stockQuantity === 0">
                   {{ p.stockQuantity === 0 ? 'Out of stock' : 'Stock: ' + p.stockQuantity }}
                 </span>
@@ -134,7 +197,12 @@
           </div>
 
           <!-- No results -->
-          <div class="product-dropdown no-results" *ngIf="showDropdown && productSearchQuery.length > 1 && productResults().length === 0 && !productSearchLoading()">
+          <div
+            class="product-dropdown no-results"
+            *ngIf="
+              showDropdown && productSearchQuery.length > 1 && productResults().length === 0 && !productSearchLoading()
+            "
+          >
             <mat-icon>search_off</mat-icon>
             <span>No products found for "{{ productSearchQuery }}"</span>
           </div>
@@ -202,7 +270,7 @@
             </div>
 
             <div class="col-total">
-              <span class="item-total">{{ item.total | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span class="item-total">{{ item.total | currency: 'INR' : 'symbol' : '1.0-0' }}</span>
             </div>
 
             <div class="col-del">
@@ -224,14 +292,32 @@
       <div class="form-section">
         <h2 class="section-title"><mat-icon>notes</mat-icon> Notes & Terms</h2>
         <div class="form-grid">
-          <mat-form-field appearance="outline" class="col-span-2">
-            <mat-label>Notes (visible to customer)</mat-label>
-            <textarea matInput [(ngModel)]="form.notes" rows="3" placeholder="Thank you for your business!"></textarea>
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="col-span-2">
-            <mat-label>Terms & Conditions</mat-label>
-            <textarea matInput [(ngModel)]="form.termsAndConditions" rows="2" placeholder="Payment due within 30 days."></textarea>
-          </mat-form-field>
+          <div class="field col-span-2">
+            <label class="field-label" for="notes">Notes (visible to customer)</label>
+            <div class="field-control field-control--textarea">
+              <mat-icon class="field-icon field-icon--top">notes</mat-icon>
+              <textarea
+                id="notes"
+                class="field-textarea"
+                [(ngModel)]="form.notes"
+                rows="3"
+                placeholder="Thank you for your business!"
+              ></textarea>
+            </div>
+          </div>
+          <div class="field col-span-2">
+            <label class="field-label" for="termsAndConditions">Terms & Conditions</label>
+            <div class="field-control field-control--textarea">
+              <mat-icon class="field-icon field-icon--top">description</mat-icon>
+              <textarea
+                id="termsAndConditions"
+                class="field-textarea"
+                [(ngModel)]="form.termsAndConditions"
+                rows="2"
+                placeholder="Payment due within 30 days."
+              ></textarea>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -243,22 +329,22 @@
 
         <div class="totals-row">
           <span>Subtotal</span>
-          <span>{{ totals().subtotal | currency:'INR':'symbol':'1.2-2' }}</span>
+          <span>{{ totals().subtotal | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
         </div>
         <div class="totals-row discount" *ngIf="totals().totalDiscount > 0">
           <span>Discount</span>
-          <span>- {{ totals().totalDiscount | currency:'INR':'symbol':'1.2-2' }}</span>
+          <span>- {{ totals().totalDiscount | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
         </div>
         <div class="totals-row">
           <span>Taxable Amount</span>
-          <span>{{ totals().taxableAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+          <span>{{ totals().taxableAmount | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
         </div>
 
         <!-- Tax breakdown -->
         <div class="tax-breakdown" *ngIf="taxBreakdown().length > 0">
           <div class="totals-row tax-row" *ngFor="let t of taxBreakdown()">
             <span>GST {{ t.rate }}%</span>
-            <span>{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
+            <span>{{ t.amount | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
           </div>
         </div>
 
@@ -266,13 +352,14 @@
 
         <div class="totals-row grand-total">
           <span>Grand Total</span>
-          <span>{{ totals().grandTotal | currency:'INR':'symbol':'1.2-2' }}</span>
+          <span>{{ totals().grandTotal | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
         </div>
 
         <div class="items-count">
           <mat-icon>shopping_cart</mat-icon>
-          {{ lineItems().length }} item{{ lineItems().length !== 1 ? 's' : '' }},
-          {{ totalQty() }} unit{{ totalQty() !== 1 ? 's' : '' }}
+          {{ lineItems().length }} item{{ lineItems().length !== 1 ? 's' : '' }}, {{ totalQty() }} unit{{
+            totalQty() !== 1 ? 's' : ''
+          }}
         </div>
       </div>
 
@@ -282,7 +369,13 @@
         <button mat-stroked-button class="w-full mb-2" (click)="applyGlobalDiscount()">
           <mat-icon>local_offer</mat-icon> Apply Global Discount
         </button>
-        <button mat-stroked-button class="w-full" (click)="clearAllItems()" [disabled]="lineItems().length === 0" color="warn">
+        <button
+          mat-stroked-button
+          class="w-full"
+          (click)="clearAllItems()"
+          [disabled]="lineItems().length === 0"
+          color="warn"
+        >
           <mat-icon>clear_all</mat-icon> Clear All Items
         </button>
       </div>

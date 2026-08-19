@@ -1,14 +1,10 @@
-import {
-  ChangeDetectionStrategy, Component, OnInit, inject, signal, computed,
-} from '@angular/core';
+import type { OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { NgFor, NgIf, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
@@ -46,10 +42,15 @@ interface InvoiceForm {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgFor, NgIf, FormsModule, CurrencyPipe,
-    MatButtonModule, MatIconModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatTooltipModule, MatProgressSpinnerModule, MatDividerModule,
+    NgFor,
+    NgIf,
+    FormsModule,
+    CurrencyPipe,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatDividerModule,
   ],
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss'],
@@ -89,11 +90,11 @@ export class InvoiceFormComponent implements OnInit {
 
   protected readonly totals = computed(() => {
     const items = this.lineItems();
-    const subtotal      = items.reduce((s, i) => s + i.subtotal, 0);
+    const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
     const totalDiscount = items.reduce((s, i) => s + i.discountAmount, 0);
     const taxableAmount = subtotal - totalDiscount;
-    const totalTax      = items.reduce((s, i) => s + i.taxAmount, 0);
-    const grandTotal    = taxableAmount + totalTax;
+    const totalTax = items.reduce((s, i) => s + i.taxAmount, 0);
+    const grandTotal = taxableAmount + totalTax;
     return { subtotal, totalDiscount, taxableAmount, totalTax, grandTotal };
   });
 
@@ -102,7 +103,9 @@ export class InvoiceFormComponent implements OnInit {
     for (const item of this.lineItems()) {
       map.set(item.taxRate, (map.get(item.taxRate) ?? 0) + item.taxAmount);
     }
-    return [...map.entries()].map(([rate, amount]) => ({ rate, amount })).sort((a, b) => a.rate - b.rate);
+    return [...map.entries()]
+      .map(([rate, amount]) => ({ rate, amount }))
+      .sort((a, b) => a.rate - b.rate);
   });
 
   protected readonly totalQty = computed(() =>
@@ -110,11 +113,9 @@ export class InvoiceFormComponent implements OnInit {
   );
 
   constructor() {
-    this.productSearch$.pipe(
-      debounceTime(200),
-      distinctUntilChanged(),
-      takeUntilDestroyed(),
-    ).subscribe(q => this._fetchProducts(q));
+    this.productSearch$
+      .pipe(debounceTime(200), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(q => this._fetchProducts(q));
   }
 
   ngOnInit(): void {
@@ -146,14 +147,20 @@ export class InvoiceFormComponent implements OnInit {
         };
         this.lineItems.set([...inv.lineItems]);
       },
-      error: () => { this.toast.error('Failed to load invoice'); this.goBack(); },
+      error: () => {
+        this.toast.error('Failed to load invoice');
+        this.goBack();
+      },
     });
   }
 
   private _fetchProducts(q: string): void {
     this.productSearchLoading.set(true);
     this.invoiceService.searchProducts(q).subscribe({
-      next: res => { this.productResults.set(res.data as ProductSearchResult[]); this.productSearchLoading.set(false); },
+      next: res => {
+        this.productResults.set(res.data as ProductSearchResult[]);
+        this.productSearchLoading.set(false);
+      },
       error: () => this.productSearchLoading.set(false),
     });
   }
@@ -170,7 +177,9 @@ export class InvoiceFormComponent implements OnInit {
     this.showDropdown = false;
   }
 
-  closeDropdown(): void { this.showDropdown = false; }
+  closeDropdown(): void {
+    this.showDropdown = false;
+  }
 
   navigateDropdown(dir: 1 | -1): void {
     const max = this.productResults().length - 1;
@@ -194,7 +203,7 @@ export class InvoiceFormComponent implements OnInit {
     }
 
     const subtotal = p.sellingPrice;
-    const taxAmount = +(subtotal * p.taxRate / 100).toFixed(2);
+    const taxAmount = +((subtotal * p.taxRate) / 100).toFixed(2);
     const newItem: InvoiceLineItem = {
       id: `li-${Date.now()}`,
       productId: p.id,
@@ -277,11 +286,11 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   private _recalcItem(item: InvoiceLineItem): InvoiceLineItem {
-    const subtotal       = +(item.quantity * item.unitPrice).toFixed(2);
-    const discountAmount = +(subtotal * item.discountPercent / 100).toFixed(2);
-    const taxableAmt     = subtotal - discountAmount;
-    const taxAmount      = +(taxableAmt * item.taxRate / 100).toFixed(2);
-    const total          = +(taxableAmt + taxAmount).toFixed(2);
+    const subtotal = +(item.quantity * item.unitPrice).toFixed(2);
+    const discountAmount = +((subtotal * item.discountPercent) / 100).toFixed(2);
+    const taxableAmt = subtotal - discountAmount;
+    const taxAmount = +((taxableAmt * item.taxRate) / 100).toFixed(2);
+    const total = +(taxableAmt + taxAmount).toFixed(2);
     return { ...item, subtotal, discountAmount, taxAmount, total };
   }
 
@@ -293,12 +302,19 @@ export class InvoiceFormComponent implements OnInit {
     return null;
   }
 
-  saveDraft(): void { this._save('draft'); }
-  saveAndSend(): void { this._save('sent'); }
+  saveDraft(): void {
+    this._save('draft');
+  }
+  saveAndSend(): void {
+    this._save('sent');
+  }
 
   private _save(status: 'draft' | 'sent'): void {
     const err = this._validate();
-    if (err) { this.toast.error(err); return; }
+    if (err) {
+      this.toast.error(err);
+      return;
+    }
 
     this.saving.set(true);
     const payload: CreateInvoiceRequest = {
@@ -317,13 +333,20 @@ export class InvoiceFormComponent implements OnInit {
         this.saving.set(false);
         this.goBack();
       },
-      error: () => { this.toast.error('Failed to save invoice'); this.saving.set(false); },
+      error: () => {
+        this.toast.error('Failed to save invoice');
+        this.saving.set(false);
+      },
     });
   }
 
-  goBack(): void { this.router.navigate(['../../'], { relativeTo: this.route }); }
+  goBack(): void {
+    this.router.navigate(['../../'], { relativeTo: this.route });
+  }
 
-  private _today(): string { return new Date().toISOString().split('T')[0]; }
+  private _today(): string {
+    return new Date().toISOString().split('T')[0];
+  }
   private _addDays(days: number, from?: string): string {
     const d = from ? new Date(from) : new Date();
     d.setDate(d.getDate() + days);

@@ -21,6 +21,14 @@ export interface LoginRequest {
   rememberMe?: boolean;
 }
 
+export interface SignupRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
 export interface AuthState {
   user: User | null;
   tokens: AuthTokens | null;

@@ -32,6 +32,9 @@ module.exports = [
   },
   {
     files: ['src/**/*.html'],
+    plugins: {
+      prettier: prettierPlugin,
+    },
     rules: {
       'prettier/prettier': ['error', { parser: 'angular' }],
     },

@@ -93,6 +93,10 @@
   @apply flex flex-col gap-4;
 }
 
+.grid-2 {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+}
+
 /* ── Custom field ────────────────────────────────────────────── */
 .field {
   @apply flex flex-col gap-1.5;
@@ -100,14 +104,10 @@
 
 .field-label {
   @apply text-sm font-medium text-gray-700 dark:text-white/80;
-}
 
-.field-label-row {
-  @apply flex items-center justify-between;
-}
-
-.forgot-link {
-  @apply text-sm font-medium text-primary-600 hover:underline;
+  .optional {
+    @apply text-gray-400 dark:text-white/40 font-normal;
+  }
 }
 
 .field-control {
@@ -146,14 +146,6 @@
 
 .field-error {
   @apply text-xs font-medium text-danger-600 dark:text-danger-500;
-}
-
-.remember {
-  @apply flex items-center gap-2 text-sm text-gray-600 dark:text-white/70 cursor-pointer select-none;
-
-  .remember-box {
-    @apply w-4 h-4 rounded border-gray-300 text-primary-600 accent-primary-600 cursor-pointer;
-  }
 }
 
 .error-banner {

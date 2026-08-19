@@ -1,10 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, of, tap, catchError, throwError } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { of, tap, catchError, throwError } from 'rxjs';
 import { environment } from '@env/environment';
 import { AppStore } from '../../store/app.store';
-import type { AuthTokens, LoginRequest, User } from '../models/auth.model';
+import type { AuthTokens, LoginRequest, SignupRequest, User } from '../models/auth.model';
 
 interface LoginResponse {
   user: User;
@@ -54,6 +55,45 @@ export class AuthService {
       }),
       catchError(err => {
         this.store.setAuthError(err?.error?.message ?? 'Login failed');
+        return throwError(() => err);
+      }),
+    );
+  }
+
+  signup(payload: SignupRequest): Observable<LoginResponse> {
+    this.store.setAuthLoading(true);
+
+    // ── DEV MOCK — remove when real backend is available ──────────────────
+    if (!environment.production) {
+      const mockResponse: LoginResponse = {
+        user: {
+          id: String(Date.now()),
+          email: payload.email,
+          name: `${payload.firstName} ${payload.lastName}`.trim(),
+          role: 'owner',
+          businessId: `biz-${Date.now()}`,
+        },
+        tokens: {
+          accessToken: 'mock-access-token',
+          refreshToken: 'mock-refresh-token',
+          expiresIn: 3600,
+        },
+      };
+      this._persistTokens(mockResponse.tokens);
+      this.store.setAuthSuccess(mockResponse.user, mockResponse.tokens);
+      this.router.navigate(['/dashboard']);
+      return of(mockResponse);
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    return this.http.post<LoginResponse>(`${environment.apiBaseUrl}/auth/signup`, payload).pipe(
+      tap(res => {
+        this._persistTokens(res.tokens);
+        this.store.setAuthSuccess(res.user, res.tokens);
+        this.router.navigate(['/dashboard']);
+      }),
+      catchError(err => {
+        this.store.setAuthError(err?.error?.message ?? 'Signup failed');
         return throwError(() => err);
       }),
     );

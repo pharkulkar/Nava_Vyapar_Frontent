@@ -1,17 +1,14 @@
-import {
-  ChangeDetectionStrategy, Component, OnInit, inject, signal,
-} from '@angular/core';
+import type { OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgFor, NgIf, NgClass, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import type { PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
@@ -22,7 +19,6 @@ import { InvoiceService } from './invoice.service';
 import { ToastService } from '@core/services/toast.service';
 import { PageHeaderComponent } from '@shared/components/page-header.component';
 import { InvoiceViewDialogComponent } from './components/invoice-view-dialog/invoice-view-dialog.component';
-import { PaymentDialogComponent } from './components/payment-dialog/payment-dialog.component';
 import { INVOICE_STATUS_CONFIG } from './invoice.model';
 import type { Invoice, InvoiceStatus, InvoiceSummary } from './invoice.model';
 import type { PaginationParams } from '@shared/models/api.model';
@@ -33,12 +29,21 @@ import type { InvoiceFilters } from './invoice.model';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgFor, NgIf, NgClass, FormsModule, CurrencyPipe, DatePipe,
+    NgFor,
+    NgIf,
+    NgClass,
+    FormsModule,
+    CurrencyPipe,
+    DatePipe,
     RouterLink,
-    MatTableModule, MatPaginatorModule,
-    MatButtonModule, MatIconModule, MatMenuModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatTooltipModule, MatProgressSpinnerModule, MatDividerModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatDividerModule,
     PageHeaderComponent,
   ],
   templateUrl: './invoices.component.html',
@@ -52,9 +57,22 @@ export class InvoicesComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly search$ = new Subject<string>();
 
-  protected readonly statusConfig = INVOICE_STATUS_CONFIG as Record<string, { label: string; color: string; icon: string }>;
-  protected readonly displayedColumns = ['invoiceNumber', 'customerName', 'issueDate', 'grandTotal', 'status', 'actions'];
-  protected readonly statusOptions = Object.entries(INVOICE_STATUS_CONFIG).map(([value, cfg]) => ({ value: value as InvoiceStatus, label: cfg.label }));
+  protected readonly statusConfig = INVOICE_STATUS_CONFIG as Record<
+    string,
+    { label: string; color: string; icon: string }
+  >;
+  protected readonly displayedColumns = [
+    'invoiceNumber',
+    'customerName',
+    'issueDate',
+    'grandTotal',
+    'status',
+    'actions',
+  ];
+  protected readonly statusOptions = Object.entries(INVOICE_STATUS_CONFIG).map(([value, cfg]) => ({
+    value: value as InvoiceStatus,
+    label: cfg.label,
+  }));
 
   protected readonly loading = signal(false);
   protected readonly invoices = signal<Invoice[]>([]);
@@ -72,11 +90,12 @@ export class InvoicesComponent implements OnInit {
     !!this.searchQuery || !!this.selectedStatus || !!this.dateFrom || !!this.dateTo;
 
   constructor() {
-    this.search$.pipe(
-      debounceTime(350),
-      distinctUntilChanged(),
-      takeUntilDestroyed(),
-    ).subscribe(() => { this.currentPage.set(1); this.loadInvoices(); });
+    this.search$
+      .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(() => {
+        this.currentPage.set(1);
+        this.loadInvoices();
+      });
   }
 
   ngOnInit(): void {
@@ -95,8 +114,15 @@ export class InvoicesComponent implements OnInit {
       dateTo: this.dateTo || undefined,
     };
     this.invoiceService.getInvoices(params).subscribe({
-      next: res => { this.invoices.set(res.data); this.totalCount.set(res.total); this.loading.set(false); },
-      error: () => { this.toast.error('Failed to load invoices'); this.loading.set(false); },
+      next: res => {
+        this.invoices.set(res.data);
+        this.totalCount.set(res.total);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.toast.error('Failed to load invoices');
+        this.loading.set(false);
+      },
     });
   }
 
@@ -106,9 +132,22 @@ export class InvoicesComponent implements OnInit {
     });
   }
 
-  onSearch(val: string): void { this.search$.next(val); }
-  clearSearch(): void { this.searchQuery = ''; this.search$.next(''); }
-  onFilterChange(): void { this.currentPage.set(1); this.loadInvoices(); }
+  onSearch(val: string): void {
+    this.search$.next(val);
+  }
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.search$.next('');
+  }
+  onFilterChange(): void {
+    this.currentPage.set(1);
+    this.loadInvoices();
+  }
+
+  refresh(): void {
+    this.loadInvoices();
+    this.loadSummary();
+  }
 
   clearFilters(): void {
     this.searchQuery = '';
@@ -126,32 +165,32 @@ export class InvoicesComponent implements OnInit {
   }
 
   isOverdue(invoice: Invoice): boolean {
-    return invoice.status !== 'paid' && invoice.status !== 'cancelled' && new Date(invoice.dueDate) < new Date();
+    return (
+      invoice.status !== 'paid' &&
+      invoice.status !== 'cancelled' &&
+      new Date(invoice.dueDate) < new Date()
+    );
   }
 
   viewInvoice(invoice: Invoice): void {
-    this.dialog.open(InvoiceViewDialogComponent, {
-      data: { invoice },
-      width: '780px',
-      maxHeight: '92vh',
-      panelClass: 'nv-dialog',
-    }).afterClosed().subscribe(result => {
-      if (result === 'refresh') { this.loadInvoices(); this.loadSummary(); }
-    });
+    this.dialog
+      .open(InvoiceViewDialogComponent, {
+        data: { invoice },
+        width: '780px',
+        maxHeight: '92vh',
+        panelClass: 'nv-dialog',
+      })
+      .afterClosed()
+      .subscribe(result => {
+        if (result === 'refresh') {
+          this.loadInvoices();
+          this.loadSummary();
+        }
+      });
   }
 
   editInvoice(invoice: Invoice): void {
     this.router.navigate([invoice.id, 'edit'], { relativeTo: this.route });
-  }
-
-  recordPayment(invoice: Invoice): void {
-    this.dialog.open(PaymentDialogComponent, {
-      data: { invoice },
-      width: '480px',
-      panelClass: 'nv-dialog',
-    }).afterClosed().subscribe(result => {
-      if (result) { this.loadInvoices(); this.loadSummary(); }
-    });
   }
 
   printInvoice(invoice: Invoice): void {
@@ -166,7 +205,11 @@ export class InvoicesComponent implements OnInit {
   deleteInvoice(invoice: Invoice): void {
     if (!confirm(`Delete invoice ${invoice.invoiceNumber}? This cannot be undone.`)) return;
     this.invoiceService.deleteInvoice(invoice.id).subscribe({
-      next: res => { this.toast.success(res.message); this.loadInvoices(); this.loadSummary(); },
+      next: res => {
+        this.toast.success(res.message);
+        this.loadInvoices();
+        this.loadSummary();
+      },
       error: () => this.toast.error('Failed to delete invoice'),
     });
   }
@@ -175,15 +218,22 @@ export class InvoicesComponent implements OnInit {
     const rows = [
       ['Invoice #', 'Customer', 'Issue Date', 'Due Date', 'Amount', 'Balance', 'Status'],
       ...this.invoices().map(i => [
-        i.invoiceNumber, i.customerName, i.issueDate, i.dueDate,
-        i.grandTotal, i.balanceDue, i.status,
+        i.invoiceNumber,
+        i.customerName,
+        i.issueDate,
+        i.dueDate,
+        i.grandTotal,
+        i.balanceDue,
+        i.status,
       ]),
     ];
     const csv = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'invoices.csv'; a.click();
+    a.href = url;
+    a.download = 'invoices.csv';
+    a.click();
     URL.revokeObjectURL(url);
   }
 }

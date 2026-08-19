@@ -1,67 +1,68 @@
 <nv-page-header title="Invoices" subtitle="Manage your sales invoices" icon="receipt_long">
   <div actions class="flex items-center gap-2">
-    <button mat-stroked-button (click)="exportCsv()">
-      <mat-icon>download</mat-icon> Export
-    </button>
-    <button mat-flat-button color="primary" routerLink="new">
-      <mat-icon>add</mat-icon> New Invoice
-    </button>
+    <button mat-stroked-button (click)="exportCsv()"><mat-icon>download</mat-icon> Export</button>
+    <button mat-flat-button color="primary" routerLink="new"><mat-icon>add</mat-icon> New Invoice</button>
   </div>
 </nv-page-header>
 
 <!-- Summary Cards -->
 <div class="summary-row" *ngIf="summary()">
-  <div class="summary-card">
-    <div class="summary-icon bg-blue-100 dark:bg-blue-900/30 text-blue-600">
+  <div class="summary-card accent-blue">
+    <div class="summary-icon bg-gradient-to-br from-blue-500 to-blue-600">
       <mat-icon>receipt_long</mat-icon>
     </div>
-    <div>
+    <div class="summary-meta">
       <p class="summary-value">{{ summary()!.total }}</p>
-      <p class="summary-label">Total Invoices</p>
+      <p class="summary-label">Total</p>
     </div>
   </div>
-  <div class="summary-card">
-    <div class="summary-icon bg-green-100 dark:bg-green-900/30 text-green-600">
+
+  <div class="summary-card accent-green">
+    <div class="summary-icon bg-gradient-to-br from-green-500 to-emerald-600">
       <mat-icon>check_circle</mat-icon>
     </div>
-    <div>
+    <div class="summary-meta">
       <p class="summary-value">{{ summary()!.paid }}</p>
       <p class="summary-label">Paid</p>
     </div>
   </div>
-  <div class="summary-card">
-    <div class="summary-icon bg-amber-100 dark:bg-amber-900/30 text-amber-600">
-      <mat-icon>pending</mat-icon>
+
+  <div class="summary-card accent-amber">
+    <div class="summary-icon bg-gradient-to-br from-amber-500 to-orange-500">
+      <mat-icon>send</mat-icon>
     </div>
-    <div>
+    <div class="summary-meta">
       <p class="summary-value">{{ summary()!.sent }}</p>
-      <p class="summary-label">Sent / Awaiting</p>
+      <p class="summary-label">Sent</p>
     </div>
   </div>
-  <div class="summary-card">
-    <div class="summary-icon bg-red-100 dark:bg-red-900/30 text-red-600">
+
+  <div class="summary-card accent-red">
+    <div class="summary-icon bg-gradient-to-br from-red-500 to-rose-600">
       <mat-icon>schedule</mat-icon>
     </div>
-    <div>
+    <div class="summary-meta">
       <p class="summary-value">{{ summary()!.overdue }}</p>
       <p class="summary-label">Overdue</p>
     </div>
   </div>
-  <div class="summary-card wide">
-    <div class="summary-icon bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+
+  <div class="summary-card wide accent-emerald">
+    <div class="summary-icon bg-gradient-to-br from-emerald-500 to-teal-600">
       <mat-icon>currency_rupee</mat-icon>
     </div>
-    <div>
-      <p class="summary-value">{{ summary()!.totalRevenue | currency:'INR':'symbol':'1.0-0' }}</p>
+    <div class="summary-meta">
+      <p class="summary-value">{{ summary()!.totalRevenue | currency: 'INR' : 'symbol' : '1.0-0' }}</p>
       <p class="summary-label">Total Revenue</p>
     </div>
   </div>
-  <div class="summary-card wide">
-    <div class="summary-icon bg-orange-100 dark:bg-orange-900/30 text-orange-600">
+
+  <div class="summary-card wide accent-orange">
+    <div class="summary-icon bg-gradient-to-br from-orange-500 to-amber-600">
       <mat-icon>account_balance_wallet</mat-icon>
     </div>
-    <div>
-      <p class="summary-value">{{ summary()!.totalOutstanding | currency:'INR':'symbol':'1.0-0' }}</p>
+    <div class="summary-meta">
+      <p class="summary-value">{{ summary()!.totalOutstanding | currency: 'INR' : 'symbol' : '1.0-0' }}</p>
       <p class="summary-label">Outstanding</p>
     </div>
   </div>
@@ -69,36 +70,55 @@
 
 <!-- Filters -->
 <div class="filters-bar">
-  <mat-form-field appearance="outline" class="search-field">
-    <mat-icon matPrefix>search</mat-icon>
+  <div class="field-control search-field">
+    <mat-icon class="field-icon">search</mat-icon>
     <input
-      matInput
+      class="field-input"
+      type="text"
       [(ngModel)]="searchQuery"
       (ngModelChange)="onSearch($event)"
-      placeholder="Search by invoice no., customer, phone..."
+      placeholder="Search invoice no., customer, phone..."
     />
-    <button mat-icon-button matSuffix *ngIf="searchQuery" (click)="clearSearch()">
+    <button type="button" class="field-toggle" *ngIf="searchQuery" (click)="clearSearch()">
       <mat-icon>close</mat-icon>
     </button>
-  </mat-form-field>
+  </div>
 
-  <mat-form-field appearance="outline" class="filter-field">
-    <mat-label>Status</mat-label>
-    <mat-select [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
-      <mat-option value="">All Status</mat-option>
-      <mat-option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</mat-option>
-    </mat-select>
-  </mat-form-field>
+  <div class="field-control filter-field">
+    <mat-icon class="field-icon">filter_list</mat-icon>
+    <select class="field-select" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
+      <option value="">All Status</option>
+      <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+    </select>
+    <mat-icon class="select-caret">expand_more</mat-icon>
+  </div>
 
-  <mat-form-field appearance="outline" class="filter-field date-field">
-    <mat-label>From Date</mat-label>
-    <input matInput type="date" [(ngModel)]="dateFrom" (ngModelChange)="onFilterChange()" />
-  </mat-form-field>
+  <div class="field-control date-field">
+    <mat-icon class="field-icon">event</mat-icon>
+    <input
+      class="field-input"
+      type="date"
+      [(ngModel)]="dateFrom"
+      (ngModelChange)="onFilterChange()"
+      aria-label="From Date"
+    />
+  </div>
 
-  <mat-form-field appearance="outline" class="filter-field date-field">
-    <mat-label>To Date</mat-label>
-    <input matInput type="date" [(ngModel)]="dateTo" (ngModelChange)="onFilterChange()" />
-  </mat-form-field>
+  <div class="field-control date-field">
+    <mat-icon class="field-icon">event</mat-icon>
+    <input
+      class="field-input"
+      type="date"
+      [(ngModel)]="dateTo"
+      (ngModelChange)="onFilterChange()"
+      aria-label="To Date"
+    />
+  </div>
+
+  <button mat-stroked-button class="refresh-btn" (click)="refresh()" [disabled]="loading()" matTooltip="Refresh">
+    <mat-icon [class.spinning]="loading()">refresh</mat-icon>
+    <span class="refresh-label">Refresh</span>
+  </button>
 
   <button mat-icon-button matTooltip="Clear filters" (click)="clearFilters()" *ngIf="hasActiveFilters()">
     <mat-icon>filter_alt_off</mat-icon>
@@ -108,121 +128,106 @@
 <!-- Table Card -->
 <div class="table-card">
   <div class="table-loading" *ngIf="loading()">
-    <mat-spinner diameter="40" />
+    <mat-spinner diameter="36" />
   </div>
 
   <!-- Empty State -->
   <div class="empty-state" *ngIf="!loading() && invoices().length === 0">
-    <mat-icon>receipt_long</mat-icon>
-    <h3>No invoices found</h3>
-    <p>{{ hasActiveFilters() ? 'Try adjusting your filters' : 'Create your first invoice to get started' }}</p>
-    <button mat-flat-button color="primary" (click)="hasActiveFilters() ? clearFilters() : router.navigate(['new'], { relativeTo: route })">
+    <div class="empty-illustration">
+      <mat-icon>receipt_long</mat-icon>
+    </div>
+    <h3>{{ hasActiveFilters() ? 'No matching invoices' : 'No invoices yet' }}</h3>
+    <p>
+      {{ hasActiveFilters() ? 'Try adjusting your filters or search.' : 'Create your first invoice to get started.' }}
+    </p>
+    <button
+      mat-flat-button
+      color="primary"
+      (click)="hasActiveFilters() ? clearFilters() : router.navigate(['new'], { relativeTo: route })"
+    >
+      <mat-icon>{{ hasActiveFilters() ? 'filter_alt_off' : 'add' }}</mat-icon>
       {{ hasActiveFilters() ? 'Clear Filters' : 'New Invoice' }}
     </button>
   </div>
 
-  <table
-    mat-table
-    [dataSource]="invoices()"
-    class="invoices-table"
-    *ngIf="!loading() && invoices().length > 0"
-  >
-    <!-- Invoice No -->
-    <ng-container matColumnDef="invoiceNumber">
-      <th mat-header-cell *matHeaderCellDef>Invoice #</th>
-      <td mat-cell *matCellDef="let row">
-        <button class="inv-number-btn" (click)="viewInvoice(row)">{{ row.invoiceNumber }}</button>
-      </td>
-    </ng-container>
+  <div class="table-scroll" *ngIf="!loading() && invoices().length > 0">
+    <table mat-table [dataSource]="invoices()" class="invoices-table">
+      <!-- Invoice No -->
+      <ng-container matColumnDef="invoiceNumber">
+        <th mat-header-cell *matHeaderCellDef>Invoice #</th>
+        <td mat-cell *matCellDef="let row">
+          <button class="inv-number-btn" (click)="viewInvoice(row)">{{ row.invoiceNumber }}</button>
+        </td>
+      </ng-container>
 
-    <!-- Customer -->
-    <ng-container matColumnDef="customerName">
-      <th mat-header-cell *matHeaderCellDef>Customer</th>
-      <td mat-cell *matCellDef="let row">
-        <div class="customer-cell">
-          <div class="customer-avatar">{{ row.customerName.charAt(0).toUpperCase() }}</div>
-          <div>
-            <p class="customer-name">{{ row.customerName }}</p>
-            <p class="customer-phone" *ngIf="row.customerPhone">{{ row.customerPhone }}</p>
+      <!-- Customer -->
+      <ng-container matColumnDef="customerName">
+        <th mat-header-cell *matHeaderCellDef>Customer</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="customer-cell">
+            <div class="customer-avatar">{{ row.customerName.charAt(0).toUpperCase() }}</div>
+            <div class="customer-meta">
+              <p class="customer-name">{{ row.customerName }}</p>
+              <p class="customer-phone" *ngIf="row.customerPhone">{{ row.customerPhone }}</p>
+            </div>
           </div>
-        </div>
-      </td>
-    </ng-container>
+        </td>
+      </ng-container>
 
-    <!-- Issue Date -->
-    <ng-container matColumnDef="issueDate">
-      <th mat-header-cell *matHeaderCellDef>Issue Date</th>
-      <td mat-cell *matCellDef="let row">{{ row.issueDate | date:'dd MMM yyyy' }}</td>
-    </ng-container>
+      <!-- Issue Date -->
+      <ng-container matColumnDef="issueDate">
+        <th mat-header-cell *matHeaderCellDef>Issue Date</th>
+        <td mat-cell *matCellDef="let row">{{ row.issueDate | date: 'dd MMM yyyy' }}</td>
+      </ng-container>
 
-    <!-- Due Date -->
-    <!-- <ng-container matColumnDef="dueDate">
-      <th mat-header-cell *matHeaderCellDef>Due Date</th>
-      <td mat-cell *matCellDef="let row">
-        <span [class.overdue-date]="isOverdue(row)">{{ row.dueDate | date:'dd MMM yyyy' }}</span>
-      </td>
-    </ng-container> -->
+      <!-- Amount -->
+      <ng-container matColumnDef="grandTotal">
+        <th mat-header-cell *matHeaderCellDef class="num-col">Amount</th>
+        <td mat-cell *matCellDef="let row" class="num-col">
+          <span class="amount-text">{{ row.grandTotal | currency: 'INR' : 'symbol' : '1.0-0' }}</span>
+        </td>
+      </ng-container>
 
-    <!-- Amount -->
-    <ng-container matColumnDef="grandTotal">
-      <th mat-header-cell *matHeaderCellDef>Amount</th>
-      <td mat-cell *matCellDef="let row">
-        <span class="amount-text">{{ row.grandTotal | currency:'INR':'symbol':'1.0-0' }}</span>
-      </td>
-    </ng-container>
+      <!-- Status -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="status-badge" [ngClass]="row.status">
+            <mat-icon class="status-icon">{{ statusConfig[row.status].icon }}</mat-icon>
+            {{ statusConfig[row.status].label }}
+          </span>
+        </td>
+      </ng-container>
 
-    <!-- Balance Due -->
-    <!-- <ng-container matColumnDef="balanceDue">
-      <th mat-header-cell *matHeaderCellDef>Balance Due</th>
-      <td mat-cell *matCellDef="let row">
-        <span class="balance-text" [class.zero]="row.balanceDue === 0">
-          {{ row.balanceDue | currency:'INR':'symbol':'1.0-0' }}
-        </span>
-      </td>
-    </ng-container> -->
-
-    <!-- Status -->
-    <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef>Status</th>
-      <td mat-cell *matCellDef="let row">
-        <span class="status-badge" [ngClass]="row.status">
-          <mat-icon class="status-icon">{{ statusConfig[row.status].icon }}</mat-icon>
-          {{ statusConfig[row.status].label }}
-        </span>
-      </td>
-    </ng-container>
-
-    <!-- Actions -->
-    <ng-container matColumnDef="actions">
-      <th mat-header-cell *matHeaderCellDef></th>
-      <td mat-cell *matCellDef="let row">
-        <button mat-icon-button [matMenuTriggerFor]="rowMenu">
-          <mat-icon>more_vert</mat-icon>
-        </button>
-        <mat-menu #rowMenu="matMenu">
-          <button mat-menu-item (click)="viewInvoice(row)">
-            <mat-icon>visibility</mat-icon> View
+      <!-- Actions -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
+        <td mat-cell *matCellDef="let row" class="actions-col">
+          <button mat-icon-button [matMenuTriggerFor]="rowMenu" class="row-action-btn">
+            <mat-icon>more_vert</mat-icon>
           </button>
-          <button mat-menu-item (click)="editInvoice(row)" [disabled]="row.status === 'paid' || row.status === 'cancelled'">
-            <mat-icon>edit</mat-icon> Edit
-          </button>
-          <button mat-menu-item (click)="recordPayment(row)" [disabled]="row.balanceDue <= 0 || row.status === 'cancelled'">
-            <mat-icon>payments</mat-icon> Record Payment
-          </button>
-          <button mat-menu-item (click)="printInvoice(row)">
-            <mat-icon>print</mat-icon> Print / PDF
-          </button>
-          <mat-divider />
-          <button mat-menu-item (click)="deleteInvoice(row)" class="text-red-600">
-            <mat-icon class="text-red-500">delete</mat-icon> Delete
-          </button>
-        </mat-menu>
-      </td>
-    </ng-container>
+          <mat-menu #rowMenu="matMenu">
+            <button mat-menu-item (click)="viewInvoice(row)"><mat-icon>visibility</mat-icon> View</button>
+            <button
+              mat-menu-item
+              (click)="editInvoice(row)"
+              [disabled]="row.status === 'paid' || row.status === 'cancelled'"
+            >
+              <mat-icon>edit</mat-icon> Edit
+            </button>
+            <button mat-menu-item (click)="printInvoice(row)"><mat-icon>print</mat-icon> Print / PDF</button>
+            <mat-divider />
+            <button mat-menu-item (click)="deleteInvoice(row)" class="text-red-600">
+              <mat-icon class="text-red-500">delete</mat-icon> Delete
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
-  </table>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns" class="table-row"></tr>
+    </table>
+  </div>
 
   <mat-paginator
     *ngIf="totalCount() > 0"
