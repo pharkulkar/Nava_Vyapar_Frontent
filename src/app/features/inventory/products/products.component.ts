@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, OnInit, inject, signal, computed, effect,
+  ChangeDetectionStrategy, Component, OnInit, inject, signal, computed,
 } from '@angular/core';
 import { NgFor, NgIf, NgClass, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -24,8 +24,9 @@ import { ProductService } from './product.service';
 import { ToastService } from '@core/services/toast.service';
 import { PageHeaderComponent } from '@shared/components/page-header.component';
 import { ProductDialogComponent } from './components/product-dialog.component';
+import { ProductViewDialogComponent } from './components/product-view-dialog.component';
 import { BulkUploadDialogComponent } from './components/bulk-upload-dialog.component';
-import { PRODUCT_CATEGORIES } from './product.model';
+import { PRODUCT_CATEGORIES, PRODUCT_STATUS_CONFIG } from './product.model';
 import type { Product, ProductFilters, ProductStatus } from './product.model';
 import type { PaginationParams } from '@shared/models/api.model';
 
@@ -45,6 +46,7 @@ import type { PaginationParams } from '@shared/models/api.model';
   template: `
     <nv-page-header title="Products" subtitle="Manage your product catalogue" icon="category">
       <div actions class="flex items-center gap-2">
+        <button mat-stroked-button (click)="exportCsv()"><mat-icon>download</mat-icon> Export</button>
         <button mat-stroked-button (click)="openBulkUpload()">
           <mat-icon>upload_file</mat-icon> Bulk Upload
         </button>
@@ -54,34 +56,45 @@ import type { PaginationParams } from '@shared/models/api.model';
       </div>
     </nv-page-header>
 
-    <!-- Stats Row -->
-    <div class="stats-row">
-      <div class="stat-pill">
-        <mat-icon class="text-blue-500">inventory_2</mat-icon>
-        <div>
-          <p class="stat-pill-value">{{ stats().total }}</p>
-          <p class="stat-pill-label">Total Products</p>
+    <!-- Summary Cards -->
+    <div class="summary-row" *ngIf="stats()">
+      <div class="summary-card accent-blue">
+        <div class="summary-icon bg-gradient-to-br from-blue-500 to-blue-600">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <div class="summary-meta">
+          <p class="summary-value">{{ stats().total }}</p>
+          <p class="summary-label">Total Products</p>
         </div>
       </div>
-      <div class="stat-pill">
-        <mat-icon class="text-green-500">check_circle</mat-icon>
-        <div>
-          <p class="stat-pill-value">{{ stats().active }}</p>
-          <p class="stat-pill-label">Active</p>
+
+      <div class="summary-card accent-green">
+        <div class="summary-icon bg-gradient-to-br from-green-500 to-emerald-600">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="summary-meta">
+          <p class="summary-value">{{ stats().active }}</p>
+          <p class="summary-label">Active</p>
         </div>
       </div>
-      <div class="stat-pill">
-        <mat-icon class="text-amber-500">warning</mat-icon>
-        <div>
-          <p class="stat-pill-value">{{ stats().lowStock }}</p>
-          <p class="stat-pill-label">Low Stock</p>
+
+      <div class="summary-card accent-amber">
+        <div class="summary-icon bg-gradient-to-br from-amber-500 to-orange-500">
+          <mat-icon>warning</mat-icon>
+        </div>
+        <div class="summary-meta">
+          <p class="summary-value">{{ stats().lowStock }}</p>
+          <p class="summary-label">Low Stock</p>
         </div>
       </div>
-      <div class="stat-pill">
-        <mat-icon class="text-red-500">remove_circle</mat-icon>
-        <div>
-          <p class="stat-pill-value">{{ stats().outOfStock }}</p>
-          <p class="stat-pill-label">Out of Stock</p>
+
+      <div class="summary-card accent-red">
+        <div class="summary-icon bg-gradient-to-br from-red-500 to-rose-600">
+          <mat-icon>remove_circle</mat-icon>
+        </div>
+        <div class="summary-meta">
+          <p class="summary-value">{{ stats().outOfStock }}</p>
+          <p class="summary-label">Out of Stock</p>
         </div>
       </div>
     </div>
@@ -130,6 +143,11 @@ import type { PaginationParams } from '@shared/models/api.model';
         Low Stock Only
       </button>
 
+      <button mat-stroked-button class="refresh-btn" (click)="refresh()" [disabled]="loading()" matTooltip="Refresh">
+        <mat-icon [class.spinning]="loading()">refresh</mat-icon>
+        <span class="refresh-label">Refresh</span>
+      </button>
+
       <button mat-icon-button matTooltip="Clear all filters" (click)="clearFilters()" *ngIf="hasActiveFilters()">
         <mat-icon>filter_alt_off</mat-icon>
       </button>
@@ -155,12 +173,21 @@ import type { PaginationParams } from '@shared/models/api.model';
         <mat-spinner diameter="40" />
       </div>
 
-      <!-- Empty state -->
+      <!-- Empty State -->
       <div class="empty-state" *ngIf="!loading() && products().length === 0">
-        <mat-icon>inventory_2</mat-icon>
-        <h3>No products found</h3>
-        <p>{{ hasActiveFilters() ? 'Try adjusting your filters' : 'Add your first product to get started' }}</p>
-        <button mat-flat-button color="primary" (click)="hasActiveFilters() ? clearFilters() : openAddProduct()">
+        <div class="empty-illustration">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <h3>{{ hasActiveFilters() ? 'No matching products' : 'No products yet' }}</h3>
+        <p>
+          {{ hasActiveFilters() ? 'Try adjusting your filters or search.' : 'Add your first product to get started.' }}
+        </p>
+        <button
+          mat-flat-button
+          color="primary"
+          (click)="hasActiveFilters() ? clearFilters() : openAddProduct()"
+        >
+          <mat-icon>{{ hasActiveFilters() ? 'filter_alt_off' : 'add' }}</mat-icon>
           {{ hasActiveFilters() ? 'Clear Filters' : 'Add Product' }}
         </button>
       </div>
@@ -257,18 +284,24 @@ import type { PaginationParams } from '@shared/models/api.model';
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
           <td mat-cell *matCellDef="let row">
-            <span class="status-badge" [ngClass]="row.status">{{ row.status }}</span>
+            <span class="status-badge" [ngClass]="row.status">
+              <mat-icon class="status-icon">{{ statusConfig[row.status].icon }}</mat-icon>
+              {{ statusConfig[row.status].label }}
+            </span>
           </td>
         </ng-container>
 
         <!-- Actions -->
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef class="w-16"></th>
-          <td mat-cell *matCellDef="let row">
-            <button mat-icon-button [matMenuTriggerFor]="rowMenu" class="action-btn">
+          <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
+          <td mat-cell *matCellDef="let row" class="actions-col">
+            <button mat-icon-button [matMenuTriggerFor]="rowMenu" class="row-action-btn">
               <mat-icon>more_vert</mat-icon>
             </button>
             <mat-menu #rowMenu="matMenu">
+              <button mat-menu-item (click)="viewProduct(row)">
+                <mat-icon>visibility</mat-icon> View
+              </button>
               <button mat-menu-item (click)="openEditProduct(row)">
                 <mat-icon>edit</mat-icon> Edit
               </button>
@@ -311,6 +344,10 @@ export class ProductsComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly search$ = new Subject<string>();
 
+  protected readonly statusConfig = PRODUCT_STATUS_CONFIG as Record<
+    string,
+    { label: string; color: string; icon: string }
+  >;
   protected readonly displayedColumns = ['select', 'name', 'category', 'stockQuantity', 'purchasePrice', 'sellingPrice', 'taxRate', 'status', 'actions'];
   protected readonly categories = PRODUCT_CATEGORIES;
 
@@ -387,6 +424,10 @@ export class ProductsComponent implements OnInit {
   onFilterChange(): void { this.currentPage.set(1); this.loadProducts(); }
   toggleLowStock(): void { this.showLowStock = !this.showLowStock; this.onFilterChange(); }
 
+  refresh(): void {
+    this.loadProducts();
+  }
+
   clearFilters(): void {
     this.searchQuery = '';
     this.selectedCategory = '';
@@ -436,6 +477,24 @@ export class ProductsComponent implements OnInit {
     }).afterClosed().subscribe(result => {
       if (result) this.loadProducts();
     });
+  }
+
+  viewProduct(product: Product): void {
+    this.dialog
+      .open(ProductViewDialogComponent, {
+        data: { product },
+        width: '780px',
+        maxHeight: '92vh',
+        panelClass: 'nv-dialog',
+      })
+      .afterClosed()
+      .subscribe(result => {
+        if (result === 'edit') {
+          this.openEditProduct(product);
+        } else if (result) {
+          this.loadProducts();
+        }
+      });
   }
 
   openEditProduct(product: Product): void {
@@ -488,6 +547,31 @@ export class ProductsComponent implements OnInit {
     }).afterClosed().subscribe(result => {
       if (result) this.loadProducts();
     });
+  }
+
+  exportCsv(): void {
+    const rows = [
+      ['Name', 'SKU', 'Category', 'Unit', 'Purchase Price', 'Selling Price', 'Tax Rate', 'Stock', 'Status'],
+      ...this.products().map(p => [
+        p.name,
+        p.sku,
+        p.category,
+        p.unit,
+        p.purchasePrice,
+        p.sellingPrice,
+        p.taxRate,
+        p.stockQuantity,
+        p.status,
+      ]),
+    ];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

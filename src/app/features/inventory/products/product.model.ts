@@ -77,6 +77,12 @@ export const PRODUCT_CATEGORIES = [
   'Stationery', 'Hardware', 'Cosmetics', 'Medicines', 'Toys', 'Other',
 ];
 
+export const PRODUCT_STATUS_CONFIG: Record<ProductStatus, { label: string; color: string; icon: string }> = {
+  active:   { label: 'Active',   color: 'green',  icon: 'check_circle' },
+  inactive: { label: 'Inactive', color: 'red',    icon: 'remove_circle' },
+  draft:    { label: 'Draft',    color: 'amber',  icon: 'edit_note' },
+};
+
 export const TAX_RATES = [
   { label: '0% (Exempt)', value: 0 },
   { label: '5% GST', value: 5 },

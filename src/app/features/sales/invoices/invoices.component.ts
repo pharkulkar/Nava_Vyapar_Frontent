@@ -31,7 +31,6 @@ import type { InvoiceFilters } from './invoice.model';
   imports: [
     NgFor,
     NgIf,
-    NgClass,
     FormsModule,
     CurrencyPipe,
     DatePipe,
@@ -66,7 +65,6 @@ export class InvoicesComponent implements OnInit {
     'customerName',
     'issueDate',
     'grandTotal',
-    'status',
     'actions',
   ];
   protected readonly statusOptions = Object.entries(INVOICE_STATUS_CONFIG).map(([value, cfg]) => ({
