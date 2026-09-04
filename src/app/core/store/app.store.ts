@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import type { AuthState, User } from '../auth/models/auth.model';
+import type { AuthState, Business, User } from '../auth/models/auth.model';
 
 export interface AppState {
   sidebarCollapsed: boolean;
@@ -32,12 +32,15 @@ export class AppStore {
     isAuthenticated: false,
     isLoading: false,
     error: null,
+    successMessage: null,
+    selectedBusiness: null,
   });
 
   readonly auth = this._auth.asReadonly();
   readonly currentUser = computed(() => this._auth().user);
   readonly isAuthenticated = computed(() => this._auth().isAuthenticated);
   readonly authLoading = computed(() => this._auth().isLoading);
+  readonly selectedBusiness = computed(() => this._auth().selectedBusiness);
 
   // ── UI Mutations ──────────────────────────────────────────────────────────
   toggleSidebar(): void {
@@ -72,15 +75,27 @@ export class AppStore {
   }
 
   setAuthSuccess(user: User, tokens: AuthState['tokens']): void {
-    this._auth.set({ user, tokens, isAuthenticated: true, isLoading: false, error: null });
+    this._auth.set({ user, tokens, isAuthenticated: true, isLoading: false, error: null, successMessage: null, selectedBusiness: null });
+  }
+
+  setSelectedBusiness(business: Business): void {
+    this._auth.update(s => ({ ...s, selectedBusiness: business }));
   }
 
   setAuthError(error: string): void {
     this._auth.update(s => ({ ...s, isLoading: false, error }));
   }
 
+  setSignupSuccess(successMessage: string): void {
+    this._auth.update(s => ({ ...s, isLoading: false, error: null, successMessage }));
+  }
+
+  clearSuccessMessage(): void {
+    this._auth.update(s => ({ ...s, successMessage: null }));
+  }
+
   clearAuth(): void {
-    this._auth.set({ user: null, tokens: null, isAuthenticated: false, isLoading: false, error: null });
+    this._auth.set({ user: null, tokens: null, isAuthenticated: false, isLoading: false, error: null, successMessage: null, selectedBusiness: null });
   }
 
   private _applyTheme(): void {

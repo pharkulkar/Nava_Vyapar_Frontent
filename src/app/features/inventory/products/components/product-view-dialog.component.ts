@@ -1,15 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { NgIf, CurrencyPipe, TitleCasePipe, NgClass } from '@angular/common';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { PRODUCT_STATUS_CONFIG } from '../product.model';
-import type { Product } from '../product.model';
+import type { ApiProduct } from '../product.model';
 
 export interface ProductViewDialogData {
-  product: Product;
+  product: ApiProduct;
 }
 
 @Component({
@@ -17,28 +15,22 @@ export interface ProductViewDialogData {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgIf,
-    NgClass,
-    CurrencyPipe,
-    TitleCasePipe,
-    MatDialogModule,
-    MatButtonModule,
-    MatIconModule,
-    MatDividerModule,
-    MatTooltipModule,
+    MatDialogModule, MatButtonModule, MatIconModule,
+    MatDividerModule, MatTooltipModule,
   ],
   template: `
-    <div class="view-dialog" id="product-print-area">
-      <!-- Header -->
-      <div class="dialog-header">
-        <div class="header-left">
-          <h2 class="prod-title">{{ product.name }}</h2>
-          <span class="status-badge" [ngClass]="product.status">
-            <mat-icon class="status-icon">{{ statusConfig[product.status].icon }}</mat-icon>
-            {{ statusConfig[product.status].label }}
-          </span>
+    <div class="pvd-container">
+
+      <!-- ── Header ── -->
+      <div class="pvd-header">
+        <div class="pvd-header-left">
+          <div class="pvd-avatar">{{ product.name.charAt(0).toUpperCase() }}</div>
+          <div>
+            <h2 class="pvd-title">{{ product.name }}</h2>
+            <p class="pvd-code">{{ product.productCode }}</p>
+          </div>
         </div>
-        <div class="header-actions no-print">
+        <div class="pvd-actions">
           <button mat-icon-button matTooltip="Print" (click)="print()">
             <mat-icon>print</mat-icon>
           </button>
@@ -50,170 +42,156 @@ export interface ProductViewDialogData {
 
       <mat-divider />
 
-      <!-- Product Meta -->
-      <div class="product-meta">
-        <div class="meta-block">
-          <p class="meta-label">SKU</p>
-          <p class="meta-value bold">{{ product.sku }}</p>
-          <p class="meta-label" *ngIf="product.barcode">Barcode</p>
-          <p class="meta-value" *ngIf="product.barcode">{{ product.barcode }}</p>
-        </div>
-        <div class="meta-block right">
-          <div class="meta-row">
-            <span class="meta-label">Category</span>
-            <span class="meta-value">{{ product.category }}</span>
+      <!-- ── Info grid ── -->
+      <div class="pvd-body">
+
+        <!-- Row 1: category + unit -->
+        <div class="info-grid">
+          <div class="info-card">
+            <p class="info-label"><mat-icon>category</mat-icon> Category</p>
+            <p class="info-value">{{ product.category }}</p>
           </div>
-          <div class="meta-row">
-            <span class="meta-label">Unit</span>
-            <span class="meta-value">{{ product.unit | titlecase }}</span>
+          <div class="info-card">
+            <p class="info-label"><mat-icon>straighten</mat-icon> Unit of Measure</p>
+            <p class="info-value">{{ product.uom }}</p>
           </div>
         </div>
-      </div>
 
-      <!-- Pricing -->
-      <div class="pricing-section">
-        <h3 class="section-title"><mat-icon>currency_rupee</mat-icon> Pricing & Tax</h3>
-        <div class="pricing-grid">
-          <div class="price-card">
-            <p class="price-label">Purchase Price</p>
-            <p class="price-value">{{ product.purchasePrice | currency: 'INR' : 'symbol' : '1.0-0' }}</p>
+        <!-- Row 2: price + gst -->
+        <div class="info-grid">
+          <div class="info-card highlight-card">
+            <p class="info-label"><mat-icon>currency_rupee</mat-icon> Price</p>
+            <p class="info-value price-val">₹{{ product.price }}</p>
           </div>
-          <div class="price-card">
-            <p class="price-label">Selling Price</p>
-            <p class="price-value highlight">{{ product.sellingPrice | currency: 'INR' : 'symbol' : '1.0-0' }}</p>
-          </div>
-          <div class="price-card">
-            <p class="price-label">Tax Rate</p>
-            <p class="price-value">{{ product.taxRate }}%</p>
-          </div>
-          <div class="price-card">
-            <p class="price-label">Profit Margin</p>
-            <p class="price-value" [class.positive]="margin > 0" [class.negative]="margin <= 0">
-              {{ margin > 0 ? '+' : '' }}{{ margin }}%
-            </p>
+          <div class="info-card">
+            <p class="info-label"><mat-icon>percent</mat-icon> GST Rate</p>
+            <p class="info-value">{{ product.gstRate }}%</p>
           </div>
         </div>
-      </div>
 
-      <!-- Stock -->
-      <div class="stock-section">
-        <h3 class="section-title"><mat-icon>warehouse</mat-icon> Stock Information</h3>
-        <div class="stock-grid">
-          <div class="stock-card">
-            <p class="stock-label">Current Stock</p>
-            <p class="stock-value" [ngClass]="getStockClass(product)">
-              {{ product.stockQuantity }} {{ product.unit }}
-            </p>
-          </div>
-          <div class="stock-card">
-            <p class="stock-label">Low Stock Alert</p>
-            <p class="stock-value">{{ product.lowStockThreshold }} {{ product.unit }}</p>
-          </div>
+        <!-- Price including GST -->
+        <div class="gst-banner">
+          <mat-icon>receipt</mat-icon>
+          <span>Price incl. GST:</span>
+          <strong>₹{{ priceWithGst() }}</strong>
+          <span class="gst-note">({{ product.gstRate }}% GST on ₹{{ product.price }})</span>
         </div>
+
       </div>
 
-      <!-- Description -->
-      <div class="desc-section" *ngIf="product.description">
-        <h3 class="section-title"><mat-icon>description</mat-icon> Description</h3>
-        <p class="desc-text">{{ product.description }}</p>
-      </div>
+      <mat-divider />
 
-      <!-- Footer Actions -->
-      <div class="dialog-footer no-print">
-        <button mat-stroked-button mat-dialog-close>Close</button>
-        <button mat-flat-button color="primary" (click)="editProduct()">
-          <mat-icon>edit</mat-icon> Edit Product
+      <!-- ── Footer ── -->
+      <div class="pvd-footer">
+        <button class="pvd-close-btn" type="button" mat-dialog-close>Close</button>
+        <button class="pvd-edit-btn" type="button" (click)="editProduct()">
+          <mat-icon>edit</mat-icon>
+          <span>Edit Product</span>
         </button>
       </div>
+
     </div>
   `,
   styles: [`
-    .view-dialog { @apply flex flex-col w-full max-h-[90vh]; min-width: 640px; }
-
-    .dialog-header {
-      @apply flex items-start justify-between p-6 pb-4;
-      .header-left { @apply flex flex-col gap-2; }
-      .header-actions { @apply flex items-center gap-1; }
-      .prod-title { @apply text-lg font-semibold text-gray-900 dark:text-white; }
+    .pvd-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 95vw;
+      max-height: 90vh;
     }
 
-    .product-meta {
-      @apply grid grid-cols-2 gap-6 px-6 py-4;
-      .meta-block { @apply flex flex-col gap-1; }
-      .meta-label { @apply text-xs text-gray-500 dark:text-white/60 uppercase tracking-wide; }
-      .meta-value { @apply text-sm text-gray-700 dark:text-white/80; }
-      .meta-value.bold { @apply font-semibold text-gray-900 dark:text-white; }
+    /* ── Header ── */
+    .pvd-header {
+      @apply flex items-center justify-between p-6 pb-4;
+    }
+    .pvd-header-left { @apply flex items-center gap-4; }
+    .pvd-avatar {
+      @apply w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/40
+             text-primary-700 dark:text-primary-300
+             flex items-center justify-center text-xl font-bold shrink-0;
+    }
+    .pvd-title { @apply text-lg font-semibold text-gray-900 dark:text-white; }
+    .pvd-code  { @apply text-sm text-gray-400 dark:text-white/40 font-mono mt-0.5; }
+    .pvd-actions { @apply flex items-center gap-1 text-gray-400; }
+
+    /* ── Body ── */
+    .pvd-body {
+      @apply flex flex-col gap-4 p-6;
     }
 
-    .pricing-section, .stock-section, .desc-section {
-      @apply px-6 py-4;
-      .section-title {
-        @apply flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-white/80 uppercase tracking-wide mb-4;
-        mat-icon { @apply text-base text-primary-500; font-size: 18px; }
-      }
-    }
-
-    .pricing-grid {
-      @apply grid grid-cols-2 sm:grid-cols-4 gap-3;
-      .price-card {
-        @apply p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10;
-        .price-label { @apply text-xs text-gray-500 dark:text-white/60 mb-1; }
-        .price-value { @apply text-lg font-bold text-gray-900 dark:text-white; }
-        .price-value.highlight { @apply text-primary-600 dark:text-primary-400; }
-        .price-value.positive { @apply text-green-600; }
-        .price-value.negative { @apply text-red-500; }
-      }
-    }
-
-    .stock-grid {
+    .info-grid {
       @apply grid grid-cols-2 gap-3;
-      .stock-card {
-        @apply p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10;
-        .stock-label { @apply text-xs text-gray-500 dark:text-white/60 mb-1; }
-        .stock-value { @apply text-lg font-bold; }
+    }
+
+    .info-card {
+      @apply flex flex-col gap-2 p-4 rounded-xl
+             bg-gray-50 dark:bg-white/5
+             border border-gray-100 dark:border-white/10;
+      &.highlight-card {
+        @apply bg-primary-50 dark:bg-primary-900/20
+               border-primary-100 dark:border-primary-700/30;
       }
     }
 
-    .desc-text { @apply text-sm text-gray-600 dark:text-white/70 leading-relaxed; }
-
-    .dialog-footer {
-      @apply flex items-center justify-end gap-3 px-6 py-4 mt-auto;
+    .info-label {
+      @apply flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide
+             text-gray-400 dark:text-white/50;
+      mat-icon { font-size: 14px; width: 14px; height: 14px; }
     }
 
-    .status-badge {
-      @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize w-fit;
-      .status-icon { @apply text-xs; font-size: 14px; width: 14px; height: 14px; }
-      &.active   { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
-      &.inactive { @apply bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400; }
-      &.draft    { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
+    .info-value {
+      @apply text-base font-semibold text-gray-900 dark:text-white;
+      &.price-val { @apply text-2xl text-primary-600 dark:text-primary-400; }
+    }
+
+    .gst-banner {
+      @apply flex items-center gap-2 px-4 py-3 rounded-xl
+             bg-amber-50 dark:bg-amber-900/20
+             border border-amber-100 dark:border-amber-700/30
+             text-sm text-amber-800 dark:text-amber-300;
+      mat-icon { font-size: 18px; @apply text-amber-500 shrink-0; }
+      strong { @apply font-bold; }
+      .gst-note { @apply text-xs text-amber-600 dark:text-amber-400 ml-1; }
+    }
+
+    /* ── Footer ── */
+    .pvd-footer {
+      @apply flex items-center justify-end gap-3 px-6 py-4;
+    }
+
+    .pvd-close-btn {
+      @apply h-10 px-5 rounded-xl border border-gray-300 dark:border-white/15
+             text-sm font-medium text-gray-700 dark:text-white/80
+             hover:bg-gray-50 dark:hover:bg-white/5 transition-all;
+    }
+
+    .pvd-edit-btn {
+      @apply flex items-center gap-2 h-10 px-6 rounded-xl
+             bg-primary-600 text-white text-sm font-semibold
+             shadow-lg shadow-primary-600/25
+             hover:bg-primary-700 active:scale-[0.99]
+             transition-all duration-200;
+    }
+
+    @media (max-width: 480px) {
+      .info-grid { grid-template-columns: 1fr; }
     }
   `],
 })
 export class ProductViewDialogComponent {
-  private readonly data = inject<ProductViewDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject(MatDialogRef<ProductViewDialogComponent>);
-  private readonly dialog = inject(MatDialog);
 
-  protected readonly product = this.data.product;
-  protected readonly statusConfig = PRODUCT_STATUS_CONFIG as Record<
-    string,
-    { label: string; color: string; icon: string }
-  >;
-  protected readonly margin = this.product.purchasePrice > 0
-    ? ((this.product.sellingPrice - this.product.purchasePrice) / this.product.purchasePrice) * 100
-    : 0;
+  protected readonly product = inject<ProductViewDialogData>(MAT_DIALOG_DATA).product;
 
-  getStockClass(product: Product): string {
-    if (product.stockQuantity === 0) return 'out-of-stock';
-    if (product.stockQuantity <= product.lowStockThreshold) return 'low-stock';
-    return 'in-stock';
+  priceWithGst(): string {
+    const price = Number(this.product.price);
+    const gst   = Number(this.product.gstRate);
+    if (isNaN(price) || isNaN(gst)) return this.product.price;
+    return (price + (price * gst) / 100).toFixed(2);
   }
 
-  print(): void {
-    window.print();
-  }
+  print(): void { window.print(); }
 
-  editProduct(): void {
-    this.dialogRef.close('edit');
-  }
+  editProduct(): void { this.dialogRef.close('edit'); }
 }

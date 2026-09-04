@@ -164,6 +164,14 @@
   }
 }
 
+.success-banner {
+  @apply flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 text-green-700 text-sm border border-green-200 dark:bg-green-500/10 dark:text-green-300 dark:border-green-500/30;
+  mat-icon {
+    @apply text-base shrink-0;
+    font-size: 18px;
+  }
+}
+
 .submit-btn {
   @apply mt-2 flex items-center justify-center gap-2 h-12 rounded-xl
          bg-primary-600 text-white font-semibold text-sm

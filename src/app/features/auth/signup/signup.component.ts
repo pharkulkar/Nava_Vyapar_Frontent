@@ -5,8 +5,8 @@ import { NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { AuthService } from '../../core/auth/services/auth.service';
-import { AppStore } from '../../core/store/app.store';
+import { AuthService } from '../../../core/auth/services/auth.service';
+import { AppStore } from '../../../core/store/app.store';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password')?.value;
@@ -34,8 +34,7 @@ export class SignupComponent {
     {
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
-      phone: ['', [Validators.pattern(/^[6-9]\d{9}$/)]],
-      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
     },
@@ -49,9 +48,9 @@ export class SignupComponent {
   onSubmit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    const { firstName, lastName, phone, email, password } = this.form.getRawValue();
+    const { firstName, lastName, phone, password } = this.form.getRawValue();
     this.authService
-      .signup({ firstName, lastName, phone: phone || undefined, email, password })
+      .signup({ firstName, lastName, mobileNo: phone || undefined, password })
       .subscribe();
   }
 }

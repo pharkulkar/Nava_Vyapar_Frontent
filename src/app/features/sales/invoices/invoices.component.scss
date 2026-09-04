@@ -420,19 +420,23 @@
     background: #dbeafe;
     color: #1d4ed8;
   }
-  &.paid {
+  &.paid, &.status-paid {
     background: #dcfce7;
     color: #15803d;
   }
-  &.partial {
+  &.partial, &.status-partially-paid {
     background: #fef3c7;
     color: #b45309;
+  }
+  &.status-pending {
+    background: #dbeafe;
+    color: #1d4ed8;
   }
   &.overdue {
     background: #fee2e2;
     color: #b91c1c;
   }
-  &.cancelled {
+  &.cancelled, &.status-cancelled {
     background: #f1f5f9;
     color: #94a3b8;
   }
@@ -448,11 +452,11 @@
       background: #1e3a5f;
       color: #93c5fd;
     }
-    &.paid {
+    &.paid, &.status-paid {
       background: #14532d;
       color: #86efac;
     }
-    &.partial {
+    &.partial, &.status-partially-paid {
       background: #451a03;
       color: #fcd34d;
     }
@@ -460,9 +464,13 @@
       background: #450a0a;
       color: #fca5a5;
     }
-    &.cancelled {
+    &.cancelled, &.status-cancelled {
       background: #1e293b;
       color: #64748b;
+    }
+    &.status-pending {
+      background: #1e3a5f;
+      color: #93c5fd;
     }
   }
 }

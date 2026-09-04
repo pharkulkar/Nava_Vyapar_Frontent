@@ -5,12 +5,7 @@ import type { Observable } from 'rxjs';
 import { of, tap, catchError, throwError } from 'rxjs';
 import { environment } from '@env/environment';
 import { AppStore } from '../../store/app.store';
-import type { AuthTokens, LoginRequest, SignupRequest, User } from '../models/auth.model';
-
-interface LoginResponse {
-  user: User;
-  tokens: AuthTokens;
-}
+import type { LoginRequest, LoginResponse, SignupRequest, SignupResponse, User } from '../models/auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -19,81 +14,102 @@ export class AuthService {
   private readonly store = inject(AppStore);
 
   private readonly TOKEN_KEY = 'nv_access_token';
-  private readonly REFRESH_KEY = 'nv_refresh_token';
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     this.store.setAuthLoading(true);
 
-    // ── DEV MOCK — remove when real backend is available ──────────────────
-    if (!environment.production) {
-      const mockResponse: LoginResponse = {
-        user: {
-          id: '1',
-          email: credentials.email,
-          name: 'Demo User',
-          role: 'owner',
-          businessId: 'biz-001',
-        },
-        tokens: {
-          accessToken: 'mock-access-token',
-          refreshToken: 'mock-refresh-token',
-          expiresIn: 3600,
-        },
-      };
-      this._persistTokens(mockResponse.tokens);
-      this.store.setAuthSuccess(mockResponse.user, mockResponse.tokens);
-      this.router.navigate(['/dashboard']);
-      return of(mockResponse);
-    }
-    // ─────────────────────────────────────────────────────────────────────
+    return this.http
+      .post<LoginResponse>(`${environment.apiBaseUrl}/auth/signin`, {
+        mobileNo: credentials.mobileNo,
+        password: credentials.password,
+      })
+      .pipe(
+        tap(res => {
+          localStorage.setItem(this.TOKEN_KEY, res.token);
+          const user: User = {
+            id: String(res.userId),
+            name: `${res.firstName} ${res.lastName}`.trim(),
+            role: 'owner',
+            businessId: '',
+          };
+          this.store.setAuthSuccess(user, null);
+          this.router.navigate(['/select-business']);
+        }),
+        catchError(err => {
+          const body = err?.error;
 
-    return this.http.post<LoginResponse>(`${environment.apiBaseUrl}/auth/login`, credentials).pipe(
-      tap(res => {
-        this._persistTokens(res.tokens);
-        this.store.setAuthSuccess(res.user, res.tokens);
-        this.router.navigate(['/dashboard']);
-      }),
-      catchError(err => {
-        this.store.setAuthError(err?.error?.message ?? 'Login failed');
-        return throwError(() => err);
-      }),
-    );
+          // Guard against backends that return non-2xx even on success
+          if (body?.status === 'success') {
+            const user: User = {
+              id: String(body.userId),
+              name: `${body.firstName} ${body.lastName}`.trim(),
+              role: 'owner',
+              businessId: '',
+            };
+            localStorage.setItem(this.TOKEN_KEY, body.token);
+            this.store.setAuthSuccess(user, null);
+            this.router.navigate(['/select-business']);
+            return of(body as LoginResponse);
+          }
+
+          const errorMessage =
+            body?.displayMessage ?? body?.message ?? 'Login failed';
+          this.store.setAuthError(errorMessage);
+          return throwError(() => err);
+        }),
+      );
   }
 
-  signup(payload: SignupRequest): Observable<LoginResponse> {
+  signup(payload: SignupRequest): Observable<SignupResponse> {
     this.store.setAuthLoading(true);
 
     // ── DEV MOCK — remove when real backend is available ──────────────────
-    if (!environment.production) {
-      const mockResponse: LoginResponse = {
-        user: {
-          id: String(Date.now()),
-          email: payload.email,
-          name: `${payload.firstName} ${payload.lastName}`.trim(),
-          role: 'owner',
-          businessId: `biz-${Date.now()}`,
-        },
-        tokens: {
-          accessToken: 'mock-access-token',
-          refreshToken: 'mock-refresh-token',
-          expiresIn: 3600,
-        },
-      };
-      this._persistTokens(mockResponse.tokens);
-      this.store.setAuthSuccess(mockResponse.user, mockResponse.tokens);
-      this.router.navigate(['/dashboard']);
-      return of(mockResponse);
-    }
+    // if (!environment.production) {
+    //   const mockResponse: LoginResponse = {
+    //     user: {
+    //       id: String(Date.now()),
+    //       name: `${payload.firstName} ${payload.lastName}`.trim(),
+    //       role: 'owner',
+    //       businessId: `biz-${Date.now()}`,
+    //     },
+    //     tokens: {
+    //       accessToken: 'mock-access-token',
+    //       refreshToken: 'mock-refresh-token',
+    //       expiresIn: 3600,
+    //     },
+    //   };
+    //   this._persistTokens(mockResponse.tokens);
+    //   this.store.setAuthSuccess(mockResponse.user, mockResponse.tokens);
+    //   this.router.navigate(['/dashboard']);
+    //   return of(mockResponse);
+    // }
     // ─────────────────────────────────────────────────────────────────────
 
-    return this.http.post<LoginResponse>(`${environment.apiBaseUrl}/auth/signup`, payload).pipe(
+    return this.http.post<SignupResponse>(`${environment.apiBaseUrl}/auth/signup`, payload).pipe(
       tap(res => {
-        this._persistTokens(res.tokens);
-        this.store.setAuthSuccess(res.user, res.tokens);
-        this.router.navigate(['/dashboard']);
+        this.store.setSignupSuccess(res.displayMessage);
+        this.router.navigate(['/auth/login']);
       }),
       catchError(err => {
-        this.store.setAuthError(err?.error?.message ?? 'Signup failed');
+        const body = err?.error;
+
+        // Some backends return non-2xx HTTP status even on logical success.
+        // If the body explicitly says success, treat it as such.
+        if (body?.status === 'success') {
+          const message = body.displayMessage ?? 'Registration completed successfully';
+          this.store.setSignupSuccess(message);
+          this.router.navigate(['/auth/login']);
+          return of(body as SignupResponse);
+        }
+
+        let errorMessage = 'Signup failed';
+        if (err?.status === 409 && body?.displayMessage) {
+          errorMessage = body.displayMessage;
+        } else if (body?.message) {
+          errorMessage = body.message;
+        }
+
+        this.store.setAuthError(errorMessage);
         return throwError(() => err);
       }),
     );
@@ -105,13 +121,6 @@ export class AuthService {
     this.router.navigate(['/auth/login']);
   }
 
-  refreshToken(): Observable<AuthTokens> {
-    const refreshToken = localStorage.getItem(this.REFRESH_KEY);
-    return this.http
-      .post<AuthTokens>(`${environment.apiBaseUrl}/auth/refresh`, { refreshToken })
-      .pipe(tap(tokens => this._persistTokens(tokens)));
-  }
-
   getAccessToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }
@@ -120,13 +129,7 @@ export class AuthService {
     return !!this.getAccessToken();
   }
 
-  private _persistTokens(tokens: AuthTokens): void {
-    localStorage.setItem(this.TOKEN_KEY, tokens.accessToken);
-    localStorage.setItem(this.REFRESH_KEY, tokens.refreshToken);
-  }
-
   private _clearTokens(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_KEY);
   }
 }

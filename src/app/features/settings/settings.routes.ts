@@ -5,7 +5,7 @@ import { roleGuard } from '../../core/auth/guards/role.guard';
 export const SETTINGS_ROUTES: Routes = [
   {
     path: '',
-    canActivate: [roleGuard(['owner', 'admin'])],
+    // canActivate: [roleGuard(['owner', 'admin'])],
     component: FeaturePlaceholderComponent,
     data: { title: 'Settings', icon: 'settings' },
   },

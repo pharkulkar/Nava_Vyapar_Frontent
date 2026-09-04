@@ -1,6 +1,49 @@
 export type ProductStatus = 'active' | 'inactive' | 'draft';
 export type ProductUnit = 'pcs' | 'kg' | 'g' | 'l' | 'ml' | 'box' | 'pack' | 'dozen' | 'pair' | 'set';
 
+// Shape expected by POST /api/products (array body)
+export interface ApiProductRequest {
+  productCode: string;  // maps to sku
+  name: string;
+  category: string;
+  price: number;        // maps to sellingPrice
+  uom: string;          // unit of measure, maps to unit
+  gstRate: number;      // maps to taxRate
+}
+
+// Shape returned by GET /api/products
+export interface ApiProduct {
+  id: number;
+  productCode: string;
+  name: string;
+  category: string;
+  price: string;        // comes as string from API
+  uom: string;
+  gstRate: string;      // comes as string from API
+}
+
+export interface ApiProductsResponse {
+  status: string;
+  statusMessage: string;
+  displayMessage: string;
+  products: ApiProduct[];
+}
+
+// Shape expected by PUT /api/products/?businessId= (array body)
+export interface ApiProductUpdateRequest {
+  id: number;
+  name?: string;
+  category?: string;
+  price?: number;
+  uom?: string;
+  gstRate?: number;
+}
+
+// Shape expected by DELETE /api/products/?businessId= (array body)
+export interface ApiProductDeleteRequest {
+  id: number;
+}
+
 export interface Product {
   id: string;
   name: string;

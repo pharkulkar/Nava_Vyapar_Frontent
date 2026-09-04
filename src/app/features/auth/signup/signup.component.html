@@ -80,22 +80,9 @@
           </div>
         </div>
 
-        <!-- Email -->
-        <div class="field">
-          <label class="field-label" for="email">Email</label>
-          <div class="field-control" [class.error]="f.email.invalid && f.email.touched">
-            <mat-icon class="field-icon">email</mat-icon>
-            <input id="email" class="field-input" type="email" formControlName="email" autocomplete="email" />
-          </div>
-          <div class="field-error" *ngIf="f.email.invalid && f.email.touched">
-            <span *ngIf="f.email.hasError('required')">Email is required</span>
-            <span *ngIf="f.email.hasError('email')">Enter a valid email address</span>
-          </div>
-        </div>
-
         <!-- Phone -->
         <div class="field">
-          <label class="field-label" for="phone">Phone <span class="optional">(optional)</span></label>
+          <label class="field-label" for="phone">Phone</label>
           <div class="field-control" [class.error]="f.phone.invalid && f.phone.touched">
             <mat-icon class="field-icon">phone</mat-icon>
             <input id="phone" class="field-input" type="tel" formControlName="phone" autocomplete="tel" />

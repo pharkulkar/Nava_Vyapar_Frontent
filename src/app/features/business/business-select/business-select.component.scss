@@ -1,0 +1,260 @@
+:host {
+  @apply block;
+}
+
+/* ── Page layout ── */
+.biz-page {
+  @apply min-h-screen flex bg-surface dark:bg-surface-dark;
+}
+
+/* ── Brand aside ── */
+.biz-aside {
+  @apply hidden lg:flex lg:w-2/5 xl:w-1/3 relative overflow-hidden
+         bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700
+         text-white p-12;
+}
+
+.biz-aside::after {
+  content: '';
+  @apply absolute -bottom-24 -right-24 w-96 h-96 rounded-full
+         bg-white/10 blur-3xl pointer-events-none;
+}
+
+.biz-aside-inner {
+  @apply relative z-10 flex flex-col h-full max-w-sm mx-auto w-full;
+}
+
+.brand {
+  @apply flex items-center gap-3;
+}
+
+.brand-logo {
+  @apply w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center;
+  mat-icon {
+    @apply text-white;
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.brand-name {
+  @apply text-xl font-bold tracking-tight;
+}
+
+.aside-title {
+  @apply text-3xl font-bold leading-tight mt-16;
+}
+
+.aside-subtitle {
+  @apply text-white/70 mt-3 text-base leading-relaxed;
+}
+
+.aside-features {
+  @apply list-none mt-10 space-y-4;
+
+  li {
+    @apply flex items-center gap-3 text-white/90;
+
+    mat-icon {
+      @apply text-white/80 bg-white/10 rounded-lg flex items-center justify-center shrink-0;
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+    }
+  }
+}
+
+.aside-footer {
+  @apply mt-auto pt-8 text-sm text-white/60;
+
+  strong {
+    @apply text-white font-semibold;
+  }
+}
+
+/* ── Main panel ── */
+.biz-main {
+  @apply flex-1 flex items-center justify-center p-6 sm:p-10 overflow-y-auto;
+}
+
+.biz-card {
+  @apply w-full max-w-xl flex flex-col gap-6;
+}
+
+.biz-header {
+  @apply mb-2;
+}
+
+.biz-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.biz-subtitle {
+  @apply text-sm text-gray-500 dark:text-white/60 mt-1.5;
+}
+
+/* ── States ── */
+.state-center {
+  @apply flex flex-col items-center gap-4 py-12 text-center;
+}
+
+.state-title {
+  @apply text-base font-semibold text-gray-700 dark:text-white/80;
+}
+
+.state-text {
+  @apply text-sm text-gray-400 dark:text-white/40;
+}
+
+.empty-icon {
+  @apply w-16 h-16 rounded-full bg-gray-100 dark:bg-white/10
+         flex items-center justify-center;
+
+  mat-icon {
+    @apply text-gray-400 dark:text-white/40;
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.error-banner {
+  @apply flex items-center gap-2 px-4 py-3 rounded-xl
+         bg-red-50 text-red-700 text-sm border border-red-200
+         dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/30;
+
+  mat-icon {
+    @apply text-base shrink-0;
+    font-size: 18px;
+  }
+}
+
+/* ── Business card grid ── */
+.biz-grid {
+  @apply flex flex-col gap-3;
+}
+
+.biz-card-item {
+  @apply w-full flex flex-col gap-3 p-5 rounded-2xl text-left
+         border border-gray-200 dark:border-white/10
+         bg-white dark:bg-white/5
+         shadow-sm hover:shadow-md
+         hover:border-primary-400 dark:hover:border-primary-500
+         hover:bg-primary-50/30 dark:hover:bg-primary-900/10
+         transition-all duration-200 cursor-pointer;
+
+  &:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  &.selecting {
+    @apply border-primary-500 bg-primary-50 dark:bg-primary-900/20
+           pointer-events-none;
+  }
+}
+
+.biz-card-header {
+  @apply flex items-center gap-4;
+}
+
+.biz-avatar {
+  @apply w-12 h-12 rounded-xl shrink-0
+         bg-gradient-to-br from-primary-500 to-primary-700
+         text-white text-xl font-bold
+         flex items-center justify-center
+         shadow-md shadow-primary-500/30;
+}
+
+.biz-info {
+  @apply flex-1 min-w-0;
+}
+
+.biz-name {
+  @apply text-base font-semibold text-gray-900 dark:text-white truncate;
+}
+
+.biz-address {
+  @apply text-sm text-gray-500 dark:text-white/50 truncate mt-0.5;
+}
+
+.arrow-icon {
+  @apply text-gray-300 dark:text-white/30 shrink-0 transition-transform duration-200;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.biz-card-item:hover .arrow-icon {
+  @apply text-primary-500 translate-x-1;
+}
+
+.select-spinner {
+  @apply shrink-0;
+}
+
+.biz-meta {
+  @apply flex flex-wrap items-center gap-x-4 gap-y-1.5
+         pt-3 border-t border-gray-100 dark:border-white/10;
+}
+
+.meta-item {
+  @apply flex items-center gap-1.5 text-xs text-gray-400 dark:text-white/40;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    @apply text-gray-400 dark:text-white/40;
+  }
+}
+
+/* ── Footer ── */
+.biz-footer {
+  @apply flex justify-center pt-2;
+}
+
+.logout-btn {
+  @apply flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+         text-gray-500 dark:text-white/50
+         hover:text-red-600 dark:hover:text-red-400
+         hover:bg-red-50 dark:hover:bg-red-500/10
+         transition-all duration-200;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ── Header with back button ── */
+.biz-header-top {
+  @apply flex items-start justify-between gap-4;
+}
+
+.back-btn {
+  @apply flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium shrink-0
+         text-gray-500 dark:text-white/50
+         border border-gray-200 dark:border-white/10
+         hover:text-gray-700 dark:hover:text-white/80
+         hover:bg-gray-50 dark:hover:bg-white/5
+         transition-all duration-200;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+/* ── Active business card ── */
+.biz-card-item.active {
+  @apply border-primary-400 dark:border-primary-600
+         bg-primary-50/50 dark:bg-primary-900/15;
+}
+
+.active-badge {
+  @apply flex items-center gap-1 px-2.5 py-1 rounded-full
+         text-xs font-semibold shrink-0
+         bg-green-100 text-green-700
+         dark:bg-green-900/30 dark:text-green-400;
+
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+}

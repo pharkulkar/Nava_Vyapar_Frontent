@@ -1,6 +1,21 @@
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'partial' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'upi' | 'bank_transfer' | 'cheque' | 'card' | 'credit';
 
+// Shape returned by GET /invoices from the real API
+export interface ApiInvoice {
+  id: number;
+  billNo: string;
+  customerName: string;
+  customerMobile: string;
+  customerAddress: string;
+  totalPrice: string;
+  discount: string;
+  received: string;
+  balance: string;
+  status: string;
+  date: string;
+}
+
 export interface InvoiceLineItem {
   id: string;
   productId: string;
@@ -55,6 +70,7 @@ export interface Invoice {
 }
 
 export interface CreateInvoiceRequest {
+  businessId?: string;
   customerName: string;
   customerPhone?: string;
   customerEmail?: string;
@@ -72,6 +88,26 @@ export interface CreateInvoiceRequest {
 
 export interface UpdateInvoiceRequest extends Partial<CreateInvoiceRequest> {
   id: string;
+}
+
+// ── Real API create/update request shape ─────────────────────────────────────
+export interface ApiCreateInvoiceItem {
+  productId: number;
+  productName: string;
+  qty: number;
+  price: number;
+  discount: number;   // per-item discount %
+  gstRate: number;
+}
+
+export interface ApiCreateInvoiceRequest {
+  businessId: string;
+  customerName: string;
+  customerMobile: string;
+  customerAddress: string;
+  discount: number;   // invoice-level discount (flat amount or %)
+  received: number;   // amount received upfront
+  items: ApiCreateInvoiceItem[];
 }
 
 export interface InvoiceFilters {

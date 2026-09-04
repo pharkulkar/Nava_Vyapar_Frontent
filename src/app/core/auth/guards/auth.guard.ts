@@ -9,11 +9,16 @@ export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (store.isAuthenticated() || authService.isTokenValid()) {
-    return true;
+  if (!store.isAuthenticated() && !authService.isTokenValid()) {
+    return router.createUrlTree(['/auth/login']);
   }
 
-  return router.createUrlTree(['/auth/login']);
+  // Authenticated but no business selected — send to picker
+  if (!store.selectedBusiness()) {
+    return router.createUrlTree(['/select-business']);
+  }
+
+  return true;
 };
 
 export const guestGuard: CanActivateFn = () => {
@@ -21,7 +26,23 @@ export const guestGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (store.isAuthenticated()) {
-    return router.createUrlTree(['/dashboard']);
+    // If business already selected go to dashboard, otherwise to picker
+    return store.selectedBusiness()
+      ? router.createUrlTree(['/dashboard'])
+      : router.createUrlTree(['/select-business']);
+  }
+
+  return true;
+};
+
+/** Protects /select-business — must be logged in */
+export const businessSelectGuard: CanActivateFn = () => {
+  const store = inject(AppStore);
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!store.isAuthenticated() && !authService.isTokenValid()) {
+    return router.createUrlTree(['/auth/login']);
   }
 
   return true;

@@ -11,6 +11,7 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
   totalPages: number;
+  displayMessage?: string;
 }
 
 export interface PaginationParams {

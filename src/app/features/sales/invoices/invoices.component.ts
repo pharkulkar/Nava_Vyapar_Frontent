@@ -20,7 +20,7 @@ import { ToastService } from '@core/services/toast.service';
 import { PageHeaderComponent } from '@shared/components/page-header.component';
 import { InvoiceViewDialogComponent } from './components/invoice-view-dialog/invoice-view-dialog.component';
 import { INVOICE_STATUS_CONFIG } from './invoice.model';
-import type { Invoice, InvoiceStatus, InvoiceSummary } from './invoice.model';
+import type { ApiInvoice, Invoice, InvoiceStatus, InvoiceSummary } from './invoice.model';
 import type { PaginationParams } from '@shared/models/api.model';
 import type { InvoiceFilters } from './invoice.model';
 
@@ -31,6 +31,7 @@ import type { InvoiceFilters } from './invoice.model';
   imports: [
     NgFor,
     NgIf,
+    NgClass,
     FormsModule,
     CurrencyPipe,
     DatePipe,
@@ -61,10 +62,12 @@ export class InvoicesComponent implements OnInit {
     { label: string; color: string; icon: string }
   >;
   protected readonly displayedColumns = [
-    'invoiceNumber',
+    'billNo',
     'customerName',
-    'issueDate',
-    'grandTotal',
+    'date',
+    'totalPrice',
+    // 'balance',
+    'status',
     'actions',
   ];
   protected readonly statusOptions = Object.entries(INVOICE_STATUS_CONFIG).map(([value, cfg]) => ({
@@ -73,10 +76,11 @@ export class InvoicesComponent implements OnInit {
   }));
 
   protected readonly loading = signal(false);
-  protected readonly invoices = signal<Invoice[]>([]);
+  protected readonly invoices = signal<ApiInvoice[]>([]);
   protected readonly totalCount = signal(0);
   protected readonly currentPage = signal(1);
   protected readonly summary = signal<InvoiceSummary | null>(null);
+  protected readonly emptyMessage = signal<string>('No invoices yet');
 
   protected searchQuery = '';
   protected selectedStatus = '';
@@ -115,6 +119,7 @@ export class InvoicesComponent implements OnInit {
       next: res => {
         this.invoices.set(res.data);
         this.totalCount.set(res.total);
+        if (res.displayMessage) this.emptyMessage.set(res.displayMessage);
         this.loading.set(false);
       },
       error: () => {
@@ -162,15 +167,15 @@ export class InvoicesComponent implements OnInit {
     this.loadInvoices();
   }
 
-  isOverdue(invoice: Invoice): boolean {
+  isOverdue(invoice: ApiInvoice): boolean {
     return (
-      invoice.status !== 'paid' &&
-      invoice.status !== 'cancelled' &&
-      new Date(invoice.dueDate) < new Date()
+      invoice.status !== 'Paid' &&
+      invoice.status !== 'Cancelled' &&
+      new Date(invoice.date) < new Date()
     );
   }
 
-  viewInvoice(invoice: Invoice): void {
+  viewInvoice(invoice: ApiInvoice): void {
     this.dialog
       .open(InvoiceViewDialogComponent, {
         data: { invoice },
@@ -187,11 +192,11 @@ export class InvoicesComponent implements OnInit {
       });
   }
 
-  editInvoice(invoice: Invoice): void {
+  editInvoice(invoice: ApiInvoice): void {
     this.router.navigate([invoice.id, 'edit'], { relativeTo: this.route });
   }
 
-  printInvoice(invoice: Invoice): void {
+  printInvoice(invoice: ApiInvoice): void {
     this.dialog.open(InvoiceViewDialogComponent, {
       data: { invoice, autoPrint: true },
       width: '780px',
@@ -200,9 +205,9 @@ export class InvoicesComponent implements OnInit {
     });
   }
 
-  deleteInvoice(invoice: Invoice): void {
-    if (!confirm(`Delete invoice ${invoice.invoiceNumber}? This cannot be undone.`)) return;
-    this.invoiceService.deleteInvoice(invoice.id).subscribe({
+  deleteInvoice(invoice: ApiInvoice): void {
+    if (!confirm(`Delete invoice ${invoice.billNo}? This cannot be undone.`)) return;
+    this.invoiceService.deleteInvoice(String(invoice.id)).subscribe({
       next: res => {
         this.toast.success(res.message);
         this.loadInvoices();
@@ -214,14 +219,14 @@ export class InvoicesComponent implements OnInit {
 
   exportCsv(): void {
     const rows = [
-      ['Invoice #', 'Customer', 'Issue Date', 'Due Date', 'Amount', 'Balance', 'Status'],
+      ['Invoice #', 'Customer', 'Mobile', 'Date', 'Total', 'Status'],
       ...this.invoices().map(i => [
-        i.invoiceNumber,
+        i.billNo,
         i.customerName,
-        i.issueDate,
-        i.dueDate,
-        i.grandTotal,
-        i.balanceDue,
+        i.customerMobile,
+        i.date,
+        i.totalPrice,
+        i.balance,
         i.status,
       ]),
     ];

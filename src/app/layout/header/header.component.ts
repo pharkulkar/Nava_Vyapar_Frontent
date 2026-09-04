@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
-import { RouterLink } from '@angular/router';
 import { AppStore } from '../../core/store/app.store';
 import { AuthService } from '../../core/auth/services/auth.service';
 import { TauriService } from '../../core/tauri/tauri.service';
@@ -22,6 +22,21 @@ import { TauriService } from '../../core/tauri/tauri.service';
       <div class="header-left">
         <button mat-icon-button (click)="store.toggleSidebar()" matTooltip="Toggle sidebar">
           <mat-icon>{{ store.sidebarCollapsed() ? 'menu_open' : 'menu' }}</mat-icon>
+        </button>
+
+        <!-- Business switcher chip -->
+        <button
+          *ngIf="store.selectedBusiness()"
+          class="biz-switcher"
+          (click)="switchBusiness()"
+          matTooltip="Switch business"
+          type="button"
+        >
+          <div class="biz-switcher-avatar">
+            {{ store.selectedBusiness()!.name.charAt(0).toUpperCase() }}
+          </div>
+          <span class="biz-switcher-name">{{ store.selectedBusiness()!.name }}</span>
+          <mat-icon class="biz-switcher-caret">unfold_more</mat-icon>
         </button>
       </div>
 
@@ -78,11 +93,16 @@ import { TauriService } from '../../core/tauri/tauri.service';
 export class HeaderComponent {
   protected readonly store = inject(AppStore);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly tauri = inject(TauriService);
 
   userInitials(): string {
     const name = this.store.currentUser()?.name ?? 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  switchBusiness(): void {
+    this.router.navigate(['/select-business']);
   }
 
   logout(): void {

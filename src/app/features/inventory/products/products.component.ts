@@ -9,9 +9,6 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -22,12 +19,14 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService } from './product.service';
 import { ToastService } from '@core/services/toast.service';
+import { ProductCacheService } from '@core/business/product-cache.service';
 import { PageHeaderComponent } from '@shared/components/page-header.component';
 import { ProductDialogComponent } from './components/product-dialog.component';
 import { ProductViewDialogComponent } from './components/product-view-dialog.component';
 import { BulkUploadDialogComponent } from './components/bulk-upload-dialog.component';
+import { BulkEditDialogComponent } from './components/bulk-edit-dialog.component';
 import { PRODUCT_CATEGORIES, PRODUCT_STATUS_CONFIG } from './product.model';
-import type { Product, ProductFilters, ProductStatus } from './product.model';
+import type { ApiProduct, Product, ProductFilters, ProductStatus } from './product.model';
 import type { PaginationParams } from '@shared/models/api.model';
 
 @Component({
@@ -38,7 +37,6 @@ import type { PaginationParams } from '@shared/models/api.model';
     NgFor, NgIf, NgClass, FormsModule, CurrencyPipe,
     MatTableModule, MatSortModule, MatPaginatorModule,
     MatButtonModule, MatIconModule, MatMenuModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule,
     MatCheckboxModule, MatChipsModule, MatTooltipModule,
     MatProgressSpinnerModule, MatDividerModule,
     PageHeaderComponent,
@@ -101,36 +99,42 @@ import type { PaginationParams } from '@shared/models/api.model';
 
     <!-- Filters Bar -->
     <div class="filters-bar">
-      <mat-form-field appearance="outline" class="search-field">
-        <mat-icon matPrefix>search</mat-icon>
+      <!-- Search -->
+      <div class="field-control search-field">
+        <mat-icon class="field-icon">search</mat-icon>
         <input
-          matInput
+          class="field-input"
+          type="text"
           [(ngModel)]="searchQuery"
           (ngModelChange)="onSearch($event)"
           placeholder="Search by name, SKU or category..."
         />
-        <button mat-icon-button matSuffix *ngIf="searchQuery" (click)="clearSearch()">
+        <button type="button" class="field-toggle" *ngIf="searchQuery" (click)="clearSearch()">
           <mat-icon>close</mat-icon>
         </button>
-      </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline" class="filter-field">
-        <mat-label>Category</mat-label>
-        <mat-select [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()">
-          <mat-option value="">All Categories</mat-option>
-          <mat-option *ngFor="let cat of categories" [value]="cat">{{ cat }}</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <!-- Category -->
+      <div class="field-control filter-field">
+        <mat-icon class="field-icon">category</mat-icon>
+        <select class="field-select" [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()">
+          <option value="">All Categories</option>
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+        </select>
+        <mat-icon class="select-caret">expand_more</mat-icon>
+      </div>
 
-      <mat-form-field appearance="outline" class="filter-field">
-        <mat-label>Status</mat-label>
-        <mat-select [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
-          <mat-option value="">All Status</mat-option>
-          <mat-option value="active">Active</mat-option>
-          <mat-option value="inactive">Inactive</mat-option>
-          <mat-option value="draft">Draft</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <!-- Status -->
+      <div class="field-control filter-field">
+        <mat-icon class="field-icon">filter_list</mat-icon>
+        <select class="field-select" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="draft">Draft</option>
+        </select>
+        <mat-icon class="select-caret">expand_more</mat-icon>
+      </div>
 
       <button
         mat-stroked-button
@@ -158,6 +162,9 @@ import type { PaginationParams } from '@shared/models/api.model';
       <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
         {{ selectedIds().size }} product{{ selectedIds().size > 1 ? 's' : '' }} selected
       </span>
+      <button mat-stroked-button color="primary" (click)="editSelected()">
+        <mat-icon>edit</mat-icon> Edit Selected
+      </button>
       <button mat-stroked-button color="warn" (click)="deleteSelected()">
         <mat-icon>delete</mat-icon> Delete Selected
       </button>
@@ -224,7 +231,7 @@ import type { PaginationParams } from '@shared/models/api.model';
               </div>
               <div>
                 <p class="product-name">{{ row.name }}</p>
-                <p class="product-sku">{{ row.sku }}</p>
+                <p class="product-sku">{{ row.productCode }}</p>
               </div>
             </div>
           </td>
@@ -238,56 +245,27 @@ import type { PaginationParams } from '@shared/models/api.model';
           </td>
         </ng-container>
 
-        <!-- Stock -->
-        <ng-container matColumnDef="stockQuantity">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Stock</th>
+        <!-- Price -->
+        <ng-container matColumnDef="price">
+          <th mat-header-cell *matHeaderCellDef>Price</th>
           <td mat-cell *matCellDef="let row">
-            <div class="stock-cell">
-              <span class="stock-value" [ngClass]="getStockClass(row)">
-                {{ row.stockQuantity }} {{ row.unit }}
-              </span>
-              <span class="low-stock-badge" *ngIf="row.stockQuantity > 0 && row.stockQuantity <= row.lowStockThreshold">
-                Low
-              </span>
-              <span class="out-stock-badge" *ngIf="row.stockQuantity === 0">
-                Out
-              </span>
-            </div>
+            <span class="price-text font-semibold">{{ row.price | currency:'INR':'symbol':'1.2-2' }}</span>
           </td>
         </ng-container>
 
-        <!-- Purchase Price -->
-        <ng-container matColumnDef="purchasePrice">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Purchase</th>
+        <!-- UOM -->
+        <ng-container matColumnDef="uom">
+          <th mat-header-cell *matHeaderCellDef>Unit</th>
           <td mat-cell *matCellDef="let row">
-            <span class="price-text">{{ row.purchasePrice | currency:'INR':'symbol':'1.0-0' }}</span>
+            <span class="category-chip">{{ row.uom }}</span>
           </td>
         </ng-container>
 
-        <!-- Selling Price -->
-        <ng-container matColumnDef="sellingPrice">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Selling</th>
+        <!-- GST Rate -->
+        <ng-container matColumnDef="gstRate">
+          <th mat-header-cell *matHeaderCellDef>GST</th>
           <td mat-cell *matCellDef="let row">
-            <span class="price-text font-semibold">{{ row.sellingPrice | currency:'INR':'symbol':'1.0-0' }}</span>
-          </td>
-        </ng-container>
-
-        <!-- Tax -->
-        <ng-container matColumnDef="taxRate">
-          <th mat-header-cell *matHeaderCellDef>Tax</th>
-          <td mat-cell *matCellDef="let row">
-            <span class="tax-chip">{{ row.taxRate }}%</span>
-          </td>
-        </ng-container>
-
-        <!-- Status -->
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let row">
-            <span class="status-badge" [ngClass]="row.status">
-              <mat-icon class="status-icon">{{ statusConfig[row.status].icon }}</mat-icon>
-              {{ statusConfig[row.status].label }}
-            </span>
+            <span class="tax-chip">{{ row.gstRate }}%</span>
           </td>
         </ng-container>
 
@@ -340,6 +318,7 @@ import type { PaginationParams } from '@shared/models/api.model';
 })
 export class ProductsComponent implements OnInit {
   private readonly productService = inject(ProductService);
+  private readonly productCache = inject(ProductCacheService);
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(MatDialog);
   private readonly search$ = new Subject<string>();
@@ -348,14 +327,14 @@ export class ProductsComponent implements OnInit {
     string,
     { label: string; color: string; icon: string }
   >;
-  protected readonly displayedColumns = ['select', 'name', 'category', 'stockQuantity', 'purchasePrice', 'sellingPrice', 'taxRate', 'status', 'actions'];
+  protected readonly displayedColumns = ['select', 'name', 'category', 'price', 'uom', 'gstRate', 'actions'];
   protected readonly categories = PRODUCT_CATEGORIES;
 
   protected readonly loading = signal(false);
-  protected readonly products = signal<Product[]>([]);
+  protected readonly products = signal<ApiProduct[]>([]);
   protected readonly totalCount = signal(0);
   protected readonly currentPage = signal(1);
-  protected readonly selectedIds = signal<Set<string>>(new Set());
+  protected readonly selectedIds = signal<Set<number>>(new Set());
   protected readonly stats = signal({ total: 0, active: 0, lowStock: 0, outOfStock: 0 });
 
   protected searchQuery = '';
@@ -400,7 +379,6 @@ export class ProductsComponent implements OnInit {
       next: res => {
         this.products.set(res.data);
         this.totalCount.set(res.total);
-        this._updateStats(res.data);
         this.loading.set(false);
       },
       error: () => {
@@ -410,12 +388,12 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  private _updateStats(products: Product[]): void {
+  private _updateStats(products: ApiProduct[]): void {
     this.stats.set({
       total: this.totalCount(),
-      active: products.filter(p => p.status === 'active').length,
-      lowStock: products.filter(p => p.stockQuantity > 0 && p.stockQuantity <= p.lowStockThreshold).length,
-      outOfStock: products.filter(p => p.stockQuantity === 0).length,
+      active: products.length,
+      lowStock: 0,
+      outOfStock: 0,
     });
   }
 
@@ -425,6 +403,7 @@ export class ProductsComponent implements OnInit {
   toggleLowStock(): void { this.showLowStock = !this.showLowStock; this.onFilterChange(); }
 
   refresh(): void {
+    this.productCache.invalidate();
     this.loadProducts();
   }
 
@@ -457,7 +436,7 @@ export class ProductsComponent implements OnInit {
     this.selectedIds.set(checked ? new Set(this.products().map(p => p.id)) : new Set());
   }
 
-  toggleSelect(id: string): void {
+  toggleSelect(id: number): void {
     this.selectedIds.update(set => {
       const next = new Set(set);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -471,7 +450,8 @@ export class ProductsComponent implements OnInit {
   openAddProduct(): void {
     this.dialog.open(ProductDialogComponent, {
       data: {},
-      width: '720px',
+      width: '680px',
+      maxWidth: '95vw',
       maxHeight: '90vh',
       panelClass: 'nv-dialog',
     }).afterClosed().subscribe(result => {
@@ -479,12 +459,13 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  viewProduct(product: Product): void {
+  viewProduct(product: ApiProduct): void {
     this.dialog
       .open(ProductViewDialogComponent, {
         data: { product },
-        width: '780px',
-        maxHeight: '92vh',
+        width: '500px',
+        maxWidth: '95vw',
+        maxHeight: '90vh',
         panelClass: 'nv-dialog',
       })
       .afterClosed()
@@ -497,10 +478,11 @@ export class ProductsComponent implements OnInit {
       });
   }
 
-  openEditProduct(product: Product): void {
+  openEditProduct(product: ApiProduct): void {
     this.dialog.open(ProductDialogComponent, {
       data: { product },
-      width: '720px',
+      width: '680px',
+      maxWidth: '95vw',
       maxHeight: '90vh',
       panelClass: 'nv-dialog',
     }).afterClosed().subscribe(result => {
@@ -508,21 +490,49 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  duplicateProduct(product: Product): void {
-    const { id, createdAt, updatedAt, ...payload } = product;
-    payload.name = `${payload.name} (Copy)`;
-    payload.sku = `${payload.sku}-COPY`;
-    this.productService.createProduct(payload).subscribe({
+  duplicateProduct(product: ApiProduct): void {
+    const apiPayload = {
+      productCode: `${product.productCode}-COPY`,
+      name:        `${product.name} (Copy)`,
+      category:    product.category,
+      price:       Number(product.price),
+      uom:         product.uom,
+      gstRate:     Number(product.gstRate),
+    };
+    this.productService.addProducts([apiPayload]).subscribe({
       next: () => { this.toast.success('Product duplicated'); this.loadProducts(); },
       error: () => this.toast.error('Failed to duplicate product'),
     });
   }
 
-  deleteProduct(product: Product): void {
+  deleteProduct(product: ApiProduct): void {
     if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
-    this.productService.deleteProduct(product.id).subscribe({
-      next: res => { this.toast.success(res.message); this.loadProducts(); },
+    this.productService.deleteProducts([product.id]).subscribe({
+      next: res => {
+        this.toast.success(res.displayMessage ?? 'Product deleted');
+        this.productCache.invalidate();
+        this.loadProducts();
+      },
       error: () => this.toast.error('Failed to delete product'),
+    });
+  }
+
+  editSelected(): void {
+    const selectedProducts = this.products().filter(p => this.selectedIds().has(p.id));
+    if (selectedProducts.length === 0) return;
+
+    this.dialog.open(BulkEditDialogComponent, {
+      data: { products: selectedProducts },
+      width: '860px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'nv-dialog',
+    }).afterClosed().subscribe(result => {
+      if (result) {
+        this.clearSelection();
+        this.productCache.invalidate();
+        this.loadProducts();
+      }
     });
   }
 
@@ -531,8 +541,9 @@ export class ProductsComponent implements OnInit {
     if (!confirm(`Delete ${ids.length} products? This cannot be undone.`)) return;
     this.productService.deleteProducts(ids).subscribe({
       next: res => {
-        this.toast.success(res.message);
+        this.toast.success(res.displayMessage ?? `${ids.length} products deleted`);
         this.clearSelection();
+        this.productCache.invalidate();
         this.loadProducts();
       },
       error: () => this.toast.error('Failed to delete products'),
@@ -551,17 +562,14 @@ export class ProductsComponent implements OnInit {
 
   exportCsv(): void {
     const rows = [
-      ['Name', 'SKU', 'Category', 'Unit', 'Purchase Price', 'Selling Price', 'Tax Rate', 'Stock', 'Status'],
+      ['Name', 'Product Code', 'Category', 'Price', 'UOM', 'GST Rate'],
       ...this.products().map(p => [
         p.name,
-        p.sku,
+        p.productCode,
         p.category,
-        p.unit,
-        p.purchasePrice,
-        p.sellingPrice,
-        p.taxRate,
-        p.stockQuantity,
-        p.status,
+        p.price,
+        p.uom,
+        p.gstRate,
       ]),
     ];
     const csv = rows.map(r => r.join(',')).join('\n');
@@ -579,14 +587,9 @@ export class ProductsComponent implements OnInit {
     const map: Record<string, string> = {
       'Electronics': 'blue', 'Clothing': 'purple', 'Food & Beverages': 'green',
       'Furniture': 'orange', 'Stationery': 'cyan', 'Hardware': 'gray',
-      'Cosmetics': 'pink', 'Medicines': 'teal', 'Toys': 'yellow', 'Other': 'slate',
+      'Cosmetics': 'pink', 'Medicines': 'teal', 'Toys': 'yellow',
+      'Grocery': 'green', 'Silk': 'purple', 'Other': 'slate',
     };
     return map[category] ?? 'slate';
-  }
-
-  getStockClass(product: Product): string {
-    if (product.stockQuantity === 0) return 'out-of-stock';
-    if (product.stockQuantity <= product.lowStockThreshold) return 'low-stock';
-    return 'in-stock';
   }
 }

@@ -1,0 +1,133 @@
+<div class="biz-page">
+
+  <!-- ── Brand aside ── -->
+  <aside class="biz-aside">
+    <div class="biz-aside-inner">
+      <div class="brand">
+        <div class="brand-logo">
+          <mat-icon>storefront</mat-icon>
+        </div>
+        <span class="brand-name">Nava Vyapar</span>
+      </div>
+
+      <h2 class="aside-title">Select your business to continue.</h2>
+      <p class="aside-subtitle">
+        Each business has its own invoices, products, and reports — fully isolated.
+      </p>
+
+      <ul class="aside-features">
+        <li>
+          <mat-icon>receipt_long</mat-icon>
+          <span>Separate invoice ledgers per business</span>
+        </li>
+        <li>
+          <mat-icon>inventory_2</mat-icon>
+          <span>Independent product catalogues</span>
+        </li>
+        <li>
+          <mat-icon>bar_chart</mat-icon>
+          <span>Business-specific reports & insights</span>
+        </li>
+      </ul>
+
+      <div class="aside-footer">
+        Logged in as <strong>{{ user()?.name }}</strong>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main panel ── -->
+  <main class="biz-main">
+    <div class="biz-card">
+
+      <header class="biz-header">
+        <div class="biz-header-top">
+          <div>
+            <h1 class="biz-title">{{ isSwitching ? 'Switch Business' : 'Choose a Business' }}</h1>
+            <p class="biz-subtitle">
+              {{ isSwitching ? 'Select a different business to work with.' : 'Select the business you want to work with right now.' }}
+            </p>
+          </div>
+          <button *ngIf="isSwitching" class="back-btn" type="button" (click)="goBack()">
+            <mat-icon>arrow_back</mat-icon>
+            <span>Back</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Loading -->
+      <div class="state-center" *ngIf="loading()">
+        <mat-spinner diameter="40" />
+        <p class="state-text">Fetching your businesses…</p>
+      </div>
+
+      <!-- Error -->
+      <div class="error-banner" *ngIf="error() && !loading()">
+        <mat-icon>error_outline</mat-icon>
+        {{ error() }}
+      </div>
+
+      <!-- Empty -->
+      <div class="state-center" *ngIf="!loading() && !error() && businesses().length === 0">
+        <div class="empty-icon">
+          <mat-icon>business</mat-icon>
+        </div>
+        <p class="state-title">No businesses found</p>
+        <p class="state-text">You don't have any businesses registered yet.</p>
+      </div>
+
+      <!-- Business Cards -->
+      <div class="biz-grid" *ngIf="!loading() && businesses().length > 0">
+        <button
+          *ngFor="let biz of businesses()"
+          class="biz-card-item"
+          [class.selecting]="selecting() === biz.id"
+          [class.active]="currentBusiness()?.id === biz.id && selecting() === null"
+          (click)="selectBusiness(biz)"
+          type="button"
+        >
+          <div class="biz-card-header">
+            <div class="biz-avatar">
+              {{ biz.name.charAt(0).toUpperCase() }}
+            </div>
+            <div class="biz-info">
+              <p class="biz-name">{{ biz.name }}</p>
+              <p class="biz-address">{{ biz.address }}</p>
+            </div>
+            <span *ngIf="currentBusiness()?.id === biz.id && selecting() === null" class="active-badge">
+              <mat-icon>check_circle</mat-icon> Active
+            </span>
+            <mat-spinner
+              *ngIf="selecting() === biz.id"
+              diameter="20"
+              class="select-spinner"
+            />
+            <mat-icon *ngIf="selecting() !== biz.id && currentBusiness()?.id !== biz.id" class="arrow-icon">
+              arrow_forward
+            </mat-icon>
+          </div>
+
+          <div class="biz-meta">
+            <div class="meta-item" *ngIf="biz.gstNumber">
+              <mat-icon>receipt</mat-icon>
+              <span>GST: {{ biz.gstNumber }}</span>
+            </div>
+            <div class="meta-item" *ngIf="biz.contactNumber">
+              <mat-icon>phone</mat-icon>
+              <span>{{ biz.contactNumber }}</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <footer class="biz-footer">
+        <button class="logout-btn" type="button" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Sign out</span>
+        </button>
+      </footer>
+
+    </div>
+  </main>
+
+</div>

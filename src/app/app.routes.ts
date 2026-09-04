@@ -1,5 +1,5 @@
 import type { Routes } from '@angular/router';
-import { authGuard } from './core/auth/guards/auth.guard';
+import { authGuard, businessSelectGuard } from './core/auth/guards/auth.guard';
 
 export const APP_ROUTES: Routes = [
   // Auth (public)
@@ -8,7 +8,17 @@ export const APP_ROUTES: Routes = [
     loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES),
   },
 
-  // Protected shell
+  // Business selector — logged in but no business chosen yet
+  {
+    path: 'select-business',
+    canActivate: [businessSelectGuard],
+    loadComponent: () =>
+      import('./features/business/business-select/business-select.component').then(
+        m => m.BusinessSelectComponent,
+      ),
+  },
+
+  // Protected shell — requires auth AND a selected business
   {
     path: '',
     canActivate: [authGuard],

@@ -11,8 +11,10 @@ import { MatDividerModule } from '@angular/material/divider';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { InvoiceService } from '../../invoice.service';
+import { ProductCacheService } from '@core/business/product-cache.service';
 import { ToastService } from '@core/services/toast.service';
-import type { InvoiceLineItem, CreateInvoiceRequest } from '../../invoice.model';
+import { AppStore } from '@core/store/app.store';
+import type { InvoiceLineItem, CreateInvoiceRequest, ApiCreateInvoiceRequest } from '../../invoice.model';
 
 interface ProductSearchResult {
   id: string;
@@ -35,6 +37,8 @@ interface InvoiceForm {
   dueDate: string;
   notes: string;
   termsAndConditions: string;
+  globalDiscount: number;   // invoice-level discount (flat ₹ amount)
+  received: number;         // amount received upfront
 }
 
 @Component({
@@ -59,6 +63,8 @@ export class InvoiceFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly invoiceService = inject(InvoiceService);
+  private readonly productCache = inject(ProductCacheService);
+  private readonly store = inject(AppStore);
   private readonly toast = inject(ToastService);
   private readonly productSearch$ = new Subject<string>();
 
@@ -71,6 +77,9 @@ export class InvoiceFormComponent implements OnInit {
   protected readonly productSearchLoading = signal(false);
   protected readonly productResults = signal<ProductSearchResult[]>([]);
   protected readonly lineItems = signal<InvoiceLineItem[]>([]);
+
+  /** Full cached product list — populated once, filtered client-side */
+  private _allProducts: ProductSearchResult[] = [];
 
   protected productSearchQuery = '';
   protected showDropdown = false;
@@ -86,6 +95,8 @@ export class InvoiceFormComponent implements OnInit {
     dueDate: this._addDays(30),
     notes: 'Thank you for your business!',
     termsAndConditions: 'Payment due within 30 days.',
+    globalDiscount: 0,
+    received: 0,
   };
 
   protected readonly totals = computed(() => {
@@ -114,8 +125,8 @@ export class InvoiceFormComponent implements OnInit {
 
   constructor() {
     this.productSearch$
-      .pipe(debounceTime(200), distinctUntilChanged(), takeUntilDestroyed())
-      .subscribe(q => this._fetchProducts(q));
+      .pipe(debounceTime(150), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(q => this._filterProducts(q));
   }
 
   ngOnInit(): void {
@@ -125,8 +136,8 @@ export class InvoiceFormComponent implements OnInit {
       this.editId = id;
       this._loadInvoice(id);
     }
-    // Preload product list on mount
-    this._fetchProducts('');
+    // Load product catalogue once — uses cache if already fetched
+    this._loadProductCache();
   }
 
   private _loadInvoice(id: string): void {
@@ -144,6 +155,8 @@ export class InvoiceFormComponent implements OnInit {
           dueDate: inv.dueDate,
           notes: inv.notes ?? '',
           termsAndConditions: inv.termsAndConditions ?? '',
+          globalDiscount: 0,
+          received: 0,
         };
         this.lineItems.set([...inv.lineItems]);
       },
@@ -154,15 +167,41 @@ export class InvoiceFormComponent implements OnInit {
     });
   }
 
-  private _fetchProducts(q: string): void {
+  private _loadProductCache(force = false): void {
     this.productSearchLoading.set(true);
-    this.invoiceService.searchProducts(q).subscribe({
-      next: res => {
-        this.productResults.set(res.data as ProductSearchResult[]);
+    this.productCache.getProducts(force).subscribe({
+      next: products => {
+        this._allProducts = products.map(p => ({
+          id:            String(p.id),
+          name:          p.name,
+          sku:           p.productCode,
+          sellingPrice:  Number(p.price),
+          taxRate:       Number(p.gstRate),
+          unit:          p.uom,
+          stockQuantity: 0,
+          status:        'active',
+        }));
+        this._filterProducts(this.productSearchQuery);
         this.productSearchLoading.set(false);
       },
       error: () => this.productSearchLoading.set(false),
     });
+  }
+
+  private _filterProducts(q: string): void {
+    if (!q.trim()) {
+      this.productResults.set(this._allProducts.slice(0, 20));
+      return;
+    }
+    const lower = q.toLowerCase();
+    this.productResults.set(
+      this._allProducts
+        .filter(p =>
+          p.name.toLowerCase().includes(lower) ||
+          p.sku.toLowerCase().includes(lower),
+        )
+        .slice(0, 20),
+    );
   }
 
   onProductSearch(q: string): void {
@@ -296,20 +335,19 @@ export class InvoiceFormComponent implements OnInit {
 
   private _validate(): string | null {
     if (!this.form.customerName.trim()) return 'Customer name is required';
-    if (!this.form.issueDate) return 'Issue date is required';
-    if (!this.form.dueDate) return 'Due date is required';
+    if (!this.form.customerPhone.trim()) return 'Customer mobile is required';
     if (this.lineItems().length === 0) return 'Add at least one product';
     return null;
   }
 
   saveDraft(): void {
-    this._save('draft');
+    this._save();
   }
   saveAndSend(): void {
-    this._save('sent');
+    this._save();
   }
 
-  private _save(status: 'draft' | 'sent'): void {
+  private _save(): void {
     const err = this._validate();
     if (err) {
       this.toast.error(err);
@@ -317,27 +355,56 @@ export class InvoiceFormComponent implements OnInit {
     }
 
     this.saving.set(true);
-    const payload: CreateInvoiceRequest = {
-      ...this.form,
-      status,
-      lineItems: this.lineItems().map(({ id: _id, ...rest }) => rest),
+
+    const payload: ApiCreateInvoiceRequest = {
+      businessId: String(this.store.selectedBusiness()?.id ?? ''),
+      customerName:    this.form.customerName,
+      customerMobile:  this.form.customerPhone,
+      customerAddress: this.form.customerAddress,
+      discount:        this.form.globalDiscount,
+      received:        this.totals().grandTotal,
+      items: this.lineItems().map(li => ({
+        productId:   Number(li.productId),
+        productName: li.productName,
+        qty:         li.quantity,
+        price:       li.unitPrice,
+        discount:    li.discountPercent,
+        gstRate:     li.taxRate,
+      })),
     };
 
-    const obs = this.isEdit
-      ? this.invoiceService.updateInvoice({ id: this.editId, ...payload })
-      : this.invoiceService.createInvoice(payload);
-
-    obs.subscribe({
-      next: res => {
-        this.toast.success(res.message);
-        this.saving.set(false);
-        this.goBack();
-      },
-      error: () => {
-        this.toast.error('Failed to save invoice');
-        this.saving.set(false);
-      },
-    });
+    if (this.isEdit) {
+      this.invoiceService.updateInvoice({ id: this.editId } as any).subscribe({
+        next: (res: any) => {
+          this.toast.success(res.displayMessage ?? res.message ?? 'Invoice updated successfully');
+          this.saving.set(false);
+          this.goBack();
+        },
+        error: (err: any) => {
+          this.toast.error(err?.error?.displayMessage ?? err?.error?.message ?? 'Failed to update invoice');
+          this.saving.set(false);
+        },
+      });
+    } else {
+      this.invoiceService.createInvoice(payload).subscribe({
+        next: res => {
+          this.toast.success(res.displayMessage ?? res.statusMessage ?? 'Invoice created successfully');
+          this.saving.set(false);
+          this.goBack();
+        },
+        error: (err: any) => {
+          const body = err?.error;
+          if (body?.status === 'success') {
+            this.toast.success(body.displayMessage ?? 'Invoice saved');
+            this.saving.set(false);
+            this.goBack();
+            return;
+          }
+          this.toast.error(body?.displayMessage ?? body?.message ?? 'Failed to save invoice');
+          this.saving.set(false);
+        },
+      });
+    }
   }
 
   goBack(): void {

@@ -99,48 +99,6 @@
         </div>
       </div>
 
-      <!-- Invoice Details -->
-      <div class="form-section">
-        <h2 class="section-title"><mat-icon>receipt</mat-icon> Invoice Details</h2>
-        <div class="form-grid">
-          <div class="field">
-            <label class="field-label" for="issueDate">Issue Date *</label>
-            <div class="field-control">
-              <mat-icon class="field-icon">event</mat-icon>
-              <input id="issueDate" class="field-input" type="date" [(ngModel)]="form.issueDate" />
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="dueDate">Due Date *</label>
-            <div class="field-control">
-              <mat-icon class="field-icon">event_available</mat-icon>
-              <input id="dueDate" class="field-input" type="date" [(ngModel)]="form.dueDate" />
-            </div>
-          </div>
-
-          <div class="field col-span-2">
-            <label class="field-label" for="selectedTerms">Payment Terms</label>
-            <div class="field-control">
-              <mat-icon class="field-icon">schedule</mat-icon>
-              <select
-                id="selectedTerms"
-                class="field-select"
-                [(ngModel)]="selectedTerms"
-                (ngModelChange)="applyTerms($event)"
-              >
-                <option value="0">Due on Receipt</option>
-                <option value="7">Net 7 Days</option>
-                <option value="15">Net 15 Days</option>
-                <option value="30">Net 30 Days</option>
-                <option value="45">Net 45 Days</option>
-                <option value="60">Net 60 Days</option>
-              </select>
-              <mat-icon class="select-caret">expand_more</mat-icon>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Line Items -->
       <div class="form-section">

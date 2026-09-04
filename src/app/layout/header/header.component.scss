@@ -45,3 +45,36 @@
     @apply text-sm font-medium text-gray-700 max-w-[120px] truncate;
   }
 }
+
+/* ── Business switcher ── */
+.header-left {
+  @apply flex items-center gap-3;
+}
+
+.biz-switcher {
+  @apply flex items-center gap-2 h-9 px-3 rounded-xl
+         border border-gray-200 dark:border-white/10
+         bg-gray-50 dark:bg-white/5
+         hover:bg-primary-50 dark:hover:bg-primary-900/20
+         hover:border-primary-300 dark:hover:border-primary-600
+         transition-all duration-200 cursor-pointer
+         text-left max-w-[220px];
+}
+
+.biz-switcher-avatar {
+  @apply w-6 h-6 rounded-md shrink-0
+         bg-gradient-to-br from-primary-500 to-primary-700
+         text-white text-xs font-bold
+         flex items-center justify-center;
+}
+
+.biz-switcher-name {
+  @apply flex-1 text-sm font-medium text-gray-700 dark:text-white/80 truncate;
+}
+
+.biz-switcher-caret {
+  @apply text-gray-400 dark:text-white/40 shrink-0;
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}

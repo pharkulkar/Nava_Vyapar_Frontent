@@ -32,7 +32,7 @@ type UploadState = 'idle' | 'uploading' | 'done' | 'error';
           </div>
           <div>
             <h2 class="bulk-title">Bulk Upload Products</h2>
-            <p class="bulk-subtitle">Upload a CSV file to add multiple products at once</p>
+            <p class="bulk-subtitle">Upload a CSV or Excel file to add multiple products at once</p>
           </div>
         </div>
         <button mat-icon-button (click)="close()" [disabled]="state() === 'uploading'">
@@ -48,8 +48,8 @@ type UploadState = 'idle' | 'uploading' | 'done' | 'error';
         <div class="step-card">
           <div class="step-number">1</div>
           <div class="step-content">
-            <p class="step-title">Download the CSV template</p>
-            <p class="step-desc">Use our template to ensure your data is formatted correctly.</p>
+            <p class="step-title">Download the template</p>
+            <p class="step-desc">Use our CSV template — it uses the exact column names the API expects.</p>
             <button mat-stroked-button color="primary" (click)="downloadTemplate()" class="mt-2">
               <mat-icon>download</mat-icon> Download Template
             </button>
@@ -60,7 +60,7 @@ type UploadState = 'idle' | 'uploading' | 'done' | 'error';
         <div class="step-card">
           <div class="step-number">2</div>
           <div class="step-content w-full">
-            <p class="step-title">Upload your filled CSV file</p>
+            <p class="step-title">Upload your filled file</p>
 
             <div
               class="drop-zone"
@@ -74,12 +74,12 @@ type UploadState = 'idle' | 'uploading' | 'done' | 'error';
               (drop)="onDrop($event)"
               (click)="fileInput.click()"
             >
-              <input #fileInput type="file" accept=".csv" class="hidden" (change)="onFileSelected($event)" />
+              <input #fileInput type="file" accept=".csv,.xlsx,.xls" class="hidden" (change)="onFileSelected($event)" />
 
               <ng-container *ngIf="!selectedFile(); else fileSelected">
                 <mat-icon class="drop-icon">cloud_upload</mat-icon>
-                <p class="drop-text">Drag & drop your CSV here</p>
-                <p class="drop-hint">or click to browse — .csv files only</p>
+                <p class="drop-text">Drag & drop your file here</p>
+                <p class="drop-hint">or click to browse — .csv, .xlsx, .xls files accepted</p>
               </ng-container>
 
               <ng-template #fileSelected>
@@ -100,9 +100,9 @@ type UploadState = 'idle' | 'uploading' | 'done' | 'error';
           </div>
         </div>
 
-        <!-- CSV Format guide -->
+        <!-- Format guide -->
         <div class="format-guide">
-          <p class="format-title"><mat-icon>info</mat-icon> Required CSV columns</p>
+          <p class="format-title"><mat-icon>info</mat-icon> Required columns</p>
           <div class="columns-grid">
             <span *ngFor="let col of requiredColumns" class="col-chip required">{{ col }}</span>
           </div>
@@ -246,8 +246,8 @@ export class BulkUploadDialogComponent {
   protected readonly selectedFile = signal<File | null>(null);
   protected readonly result = signal<BulkUploadResult | null>(null);
 
-  protected readonly requiredColumns = ['name', 'sku', 'sellingPrice'];
-  protected readonly optionalColumns = ['category', 'unit', 'purchasePrice', 'taxRate', 'stockQuantity', 'lowStockThreshold', 'status', 'description', 'barcode'];
+  protected readonly requiredColumns = ['productCode', 'name', 'price'];
+  protected readonly optionalColumns = ['category', 'uom', 'gstRate'];
 
   onDragOver(e: DragEvent): void {
     e.preventDefault();
@@ -260,13 +260,18 @@ export class BulkUploadDialogComponent {
     e.preventDefault();
     this.isDragging.set(false);
     const file = e.dataTransfer?.files[0];
-    if (file && file.name.endsWith('.csv')) this.selectedFile.set(file);
-    else this.toast.error('Please upload a .csv file only');
+    if (file && this._isValidFile(file)) this.selectedFile.set(file);
+    else this.toast.error('Please upload a .csv, .xlsx or .xls file');
   }
 
   onFileSelected(e: Event): void {
     const file = (e.target as HTMLInputElement).files?.[0];
-    if (file) this.selectedFile.set(file);
+    if (file && this._isValidFile(file)) this.selectedFile.set(file);
+    else if (file) this.toast.error('Please upload a .csv, .xlsx or .xls file');
+  }
+
+  private _isValidFile(file: File): boolean {
+    return /\.(csv|xlsx|xls)$/i.test(file.name);
   }
 
   clearFile(e: Event): void {
