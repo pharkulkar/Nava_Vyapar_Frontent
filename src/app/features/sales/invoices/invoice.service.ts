@@ -6,7 +6,7 @@ import { environment } from '@env/environment';
 import { AppStore } from '../../../core/store/app.store';
 import type { ApiResponse, PaginatedResponse, PaginationParams } from '@shared/models/api.model';
 import type {
-  Invoice, ApiInvoice, CreateInvoiceRequest, UpdateInvoiceRequest,
+  Invoice, ApiInvoice, ApiInvoiceDetail, CreateInvoiceRequest, UpdateInvoiceRequest,
   InvoiceFilters, InvoiceSummary, InvoicePayment, ApiCreateInvoiceRequest,
 } from './invoice.model';
 
@@ -70,6 +70,18 @@ export class InvoiceService {
 
   getInvoice(id: string): Observable<ApiResponse<Invoice>> {
     return this.http.get<ApiResponse<Invoice>>(`${this.BASE}/${id}`);
+  }
+
+  getInvoiceDetail(id: number): Observable<ApiInvoiceDetail> {
+    let p = new HttpParams();
+    if (this.businessId !== null) p = p.set('businessId', this.businessId);
+    return this.http.get<{ invoice: ApiInvoiceDetail }>(`${this.BASE}/${id}`, { params: p }).pipe(
+      map(res => res.invoice),
+      catchError(err => {
+        if (err?.error?.status === 'success') return of(err.error.invoice as ApiInvoiceDetail);
+        return throwError(() => err);
+      }),
+    );
   }
 
   createInvoice(payload: ApiCreateInvoiceRequest): Observable<CreateInvoiceApiResponse> {

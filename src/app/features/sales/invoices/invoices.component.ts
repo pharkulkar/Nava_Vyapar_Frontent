@@ -20,7 +20,7 @@ import { ToastService } from '@core/services/toast.service';
 import { PageHeaderComponent } from '@shared/components/page-header.component';
 import { InvoiceViewDialogComponent } from './components/invoice-view-dialog/invoice-view-dialog.component';
 import { INVOICE_STATUS_CONFIG } from './invoice.model';
-import type { ApiInvoice, Invoice, InvoiceStatus, InvoiceSummary } from './invoice.model';
+import type { ApiInvoice, InvoiceStatus, InvoiceSummary } from './invoice.model';
 import type { PaginationParams } from '@shared/models/api.model';
 import type { InvoiceFilters } from './invoice.model';
 
@@ -179,7 +179,8 @@ export class InvoicesComponent implements OnInit {
     this.dialog
       .open(InvoiceViewDialogComponent, {
         data: { invoice },
-        width: '780px',
+        width: '500px',
+        maxWidth: '95vw',
         maxHeight: '92vh',
         panelClass: 'nv-dialog',
       })
@@ -199,7 +200,8 @@ export class InvoicesComponent implements OnInit {
   printInvoice(invoice: ApiInvoice): void {
     this.dialog.open(InvoiceViewDialogComponent, {
       data: { invoice, autoPrint: true },
-      width: '780px',
+      width: '500px',
+      maxWidth: '95vw',
       maxHeight: '92vh',
       panelClass: 'nv-dialog',
     });

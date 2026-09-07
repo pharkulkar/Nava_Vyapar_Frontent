@@ -1,135 +1,127 @@
-<div class="view-dialog" id="invoice-print-area">
-  <!-- Header -->
-  <div class="dialog-header">
-    <div class="header-left">
-      <h2 class="inv-title">{{ invoice.invoiceNumber }}</h2>
-      <span class="status-badge" [ngClass]="invoice.status">
-        <mat-icon class="status-icon">{{ statusConfig[invoice.status].icon }}</mat-icon>
-        {{ statusConfig[invoice.status].label }}
-      </span>
+<!-- Dialog chrome (hidden on print) -->
+<div class="dialog-chrome no-print">
+  <button mat-icon-button (click)="print()" title="Print / PDF" [disabled]="loading()">
+    <mat-icon>print</mat-icon>
+  </button>
+  <button mat-icon-button (click)="close()" title="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<!-- Loading state -->
+<div class="loading-state no-print" *ngIf="loading()">
+  <mat-spinner diameter="32" />
+  <span>Loading invoice details…</span>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PRINTABLE RECEIPT
+═══════════════════════════════════════════ -->
+<div class="invoice-wrap" id="invoice-print-area" *ngIf="!loading()">
+
+  <!-- ── Amount Header ── -->
+  <div class="amount-header">
+    <div class="amount-label">Amount Due</div>
+    <div class="amount">₹ {{ balance | number:'1.2-2' }}</div>
+  </div>
+
+  <!-- ── Business / Seller ── -->
+  <div class="seller-section">
+    <div class="seller-info">
+      <div class="seller-name">Nava Vyapar</div>
+      <div class="seller-phone">
+        <span class="ph-icon">☎</span>{{ invoice.customerMobile }}
+      </div>
     </div>
-    <div class="header-actions no-print">
-      <button mat-icon-button matTooltip="Print / PDF" (click)="print()">
-        <mat-icon>print</mat-icon>
-      </button>
-      <button mat-icon-button mat-dialog-close>
-        <mat-icon>close</mat-icon>
-      </button>
+    <div class="seller-avatar">N</div>
+  </div>
+
+  <!-- ── Bill To / Invoice Info ── -->
+  <div class="info-section">
+    <div class="bill-to">
+      <div class="section-accent">Bill To:</div>
+      <div class="customer-name">{{ invoice.customerName }}</div>
+      <div class="customer-phone" *ngIf="invoice.customerMobile">
+        <span class="ph-icon">☎</span> {{ invoice.customerMobile }}
+      </div>
+      <div class="customer-addr" *ngIf="invoice.customerAddress">{{ invoice.customerAddress }}</div>
+    </div>
+    <div class="invoice-info">
+      <div class="section-accent">Ref No:</div>
+      <div class="ref-number">{{ invoice.billNo }}</div>
+      <div class="section-accent">Date</div>
+      <div class="inv-date">{{ invoice.date | date:'dd-MM-yyyy' }}</div>
+      <div class="status-chip status-{{ invoice.status.toLowerCase().split(' ').join('-') }}">
+        {{ invoice.status }}
+      </div>
     </div>
   </div>
 
-  <mat-divider />
-
-  <!-- Invoice Meta -->
-  <div class="invoice-meta">
-    <div class="meta-block">
-      <p class="meta-label">Bill To</p>
-      <p class="meta-value bold">{{ invoice.customerName }}</p>
-      <p class="meta-value" *ngIf="invoice.customerPhone">{{ invoice.customerPhone }}</p>
-      <p class="meta-value" *ngIf="invoice.customerEmail">{{ invoice.customerEmail }}</p>
-      <p class="meta-value" *ngIf="invoice.customerAddress">{{ invoice.customerAddress }}</p>
-      <p class="meta-value" *ngIf="invoice.customerGstin">GSTIN: {{ invoice.customerGstin }}</p>
-    </div>
-    <div class="meta-block right">
-      <div class="meta-row">
-        <span class="meta-label">Issue Date</span>
-        <span class="meta-value">{{ invoice.issueDate | date: 'dd MMM yyyy' }}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Due Date</span>
-        <span class="meta-value" [class.overdue]="isOverdue">{{ invoice.dueDate | date: 'dd MMM yyyy' }}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Line Items -->
+  <!-- ── Items Table ── -->
   <table class="items-table">
     <thead>
       <tr>
-        <th>#</th>
-        <th>Product</th>
-        <th class="text-right">Qty</th>
-        <th class="text-right">Unit Price</th>
-        <th class="text-right">Discount</th>
-        <th class="text-right">Tax</th>
-        <th class="text-right">Total</th>
+        <th class="col-sr">SR</th>
+        <th class="col-name">Item</th>
+        <th class="col-qty">Qty</th>
+        <th class="col-price">Price</th>
+        <th class="col-gst">GST%</th>
+        <th class="col-amount">Amount</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let item of invoice.lineItems; let i = index">
-        <td class="row-num">{{ i + 1 }}</td>
-        <td>
-          <p class="item-name">{{ item.productName }}</p>
-          <p class="item-sku">{{ item.sku }} · {{ item.unit }}</p>
-        </td>
-        <td class="text-right">{{ item.quantity }}</td>
-        <td class="text-right">{{ item.unitPrice | currency: 'INR' : 'symbol' : '1.0-0' }}</td>
-        <td class="text-right">
-          <span *ngIf="item.discountPercent > 0"
-            >{{ item.discountPercent }}% ({{ item.discountAmount | currency: 'INR' : 'symbol' : '1.0-0' }})</span
-          >
-          <span *ngIf="item.discountPercent === 0">—</span>
-        </td>
-        <td class="text-right">{{ item.taxRate }}% ({{ item.taxAmount | currency: 'INR' : 'symbol' : '1.0-0' }})</td>
-        <td class="text-right item-total">{{ item.total | currency: 'INR' : 'symbol' : '1.0-0' }}</td>
+      <tr *ngFor="let item of items; let i = index">
+        <td class="col-sr">{{ i + 1 }}</td>
+        <td class="col-name">{{ item.productName }}</td>
+        <td class="col-qty">{{ item.qty }}</td>
+        <td class="col-price">{{ item.price | number:'1.2-2' }}</td>
+        <td class="col-gst">{{ item.gstRate }}%</td>
+        <td class="col-amount">{{ item.total | number:'1.2-2' }}</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Totals -->
-  <div class="totals-section">
-    <div class="totals-block">
-      <div class="total-row">
-        <span>Subtotal</span>
-        <span>{{ invoice.subtotal | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
-      </div>
-      <div class="total-row discount" *ngIf="invoice.totalDiscount > 0">
-        <span>Total Discount</span>
-        <span>- {{ invoice.totalDiscount | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
-      </div>
-      <div class="total-row">
-        <span>Total Tax (GST)</span>
-        <span>{{ invoice.totalTax | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
-      </div>
-      <mat-divider />
-      <div class="total-row grand">
-        <span>Grand Total</span>
-        <span>{{ invoice.grandTotal | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
-      </div>
-      <div class="total-row paid" *ngIf="invoice.amountPaid > 0">
-        <span>Amount Paid</span>
-        <span>{{ invoice.amountPaid | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
-      </div>
-      <div class="total-row balance" *ngIf="invoice.balanceDue > 0">
-        <span>Balance Due</span>
-        <span>{{ invoice.balanceDue | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
-      </div>
-    </div>
+  <!-- ── Calculations ── -->
+  <div class="calc-row" *ngIf="discount > 0">
+    <span class="calc-label">Discount:</span>
+    <span class="calc-value">{{ discount | number:'1.2-2' }}</span>
   </div>
 
-  <!-- Payment History -->
-  <div class="payments-section no-print" *ngIf="invoice.payments.length > 0">
-    <h3 class="section-title"><mat-icon>payments</mat-icon> Payment History</h3>
-    <div class="payment-row" *ngFor="let p of invoice.payments">
-      <mat-icon class="pay-icon">check_circle</mat-icon>
-      <div class="pay-info">
-        <span class="pay-amount">{{ p.amount | currency: 'INR' : 'symbol' : '1.0-0' }}</span>
-        <span class="pay-method">{{ p.method | titlecase }}</span>
-        <span class="pay-ref" *ngIf="p.reference">· Ref: {{ p.reference }}</span>
-      </div>
-      <span class="pay-date">{{ p.date | date: 'dd MMM yyyy' }}</span>
-    </div>
+  <div class="calc-divider"></div>
+
+  <div class="calc-row total-row">
+    <span class="calc-label">Total</span>
+    <span class="calc-value">{{ totalPrice | number:'1.2-2' }}</span>
   </div>
 
-  <!-- Notes -->
-  <div class="notes-section" *ngIf="invoice.notes">
-    <p class="notes-label">Notes</p>
-    <p class="notes-text">{{ invoice.notes }}</p>
+  <div class="calc-row grand-row">
+    <span class="calc-label">Grand Total</span>
+    <span class="calc-value">{{ totalPrice | number:'1.2-2' }}</span>
   </div>
 
-  <!-- Footer Actions -->
-  <div class="dialog-footer no-print">
-    <button mat-stroked-button mat-dialog-close>Close</button>
-    <button mat-flat-button color="primary" (click)="print()"><mat-icon>print</mat-icon> Print / PDF</button>
+  <div class="calc-row">
+    <span class="calc-label">Received</span>
+    <span class="calc-value">{{ received | number:'1.2-2' }}</span>
   </div>
+
+  <div class="calc-row balance-row">
+    <span class="calc-label">Balance Due</span>
+    <span class="calc-value">{{ balance | number:'1.2-2' }}</span>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="receipt-footer">
+    <div class="footer-line"></div>
+    <p class="footer-thanks">Thank you for your business!</p>
+    <p class="footer-brand">Powered by Nava Vyapar</p>
+  </div>
+
+</div>
+
+<!-- Dialog action bar (hidden on print) -->
+<div class="dialog-footer no-print" *ngIf="!loading()">
+  <button class="close-btn" type="button" (click)="close()">Close</button>
+  <button class="print-btn" type="button" (click)="print()">
+    <mat-icon>print</mat-icon> Print / PDF
+  </button>
 </div>

@@ -16,6 +16,24 @@ export interface ApiInvoice {
   date: string;
 }
 
+// Item inside a detailed invoice (GET /invoices/:id)
+export interface ApiInvoiceItem {
+  id: number;
+  productId: number;
+  productName: string;
+  price: string;
+  qty: number;
+  discount: string;
+  gstRate: string;
+  total: string;
+}
+
+// Full invoice returned by GET /invoices/:id
+export interface ApiInvoiceDetail extends ApiInvoice {
+  businessId: number;
+  items: ApiInvoiceItem[];
+}
+
 export interface InvoiceLineItem {
   id: string;
   productId: string;
