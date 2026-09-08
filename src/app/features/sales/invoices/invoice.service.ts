@@ -24,6 +24,13 @@ interface CreateInvoiceApiResponse {
   invoice: unknown;
 }
 
+interface PatchReceivedResponse {
+  status: string;
+  statusMessage: string;
+  displayMessage: string;
+  invoice?: unknown;
+}
+
 @Injectable({ providedIn: 'root' })
 export class InvoiceService {
   private readonly http = inject(HttpClient);
@@ -69,7 +76,7 @@ export class InvoiceService {
   }
 
   getInvoice(id: string): Observable<ApiResponse<Invoice>> {
-    return this.http.get<ApiResponse<Invoice>>(`${this.BASE}/${id}`);
+    return this.http.get<ApiResponse<Invoice>>(`${this.BASE}/${id}?businessId=${this.businessId}`);
   }
 
   getInvoiceDetail(id: number): Observable<ApiInvoiceDetail> {
@@ -97,6 +104,22 @@ export class InvoiceService {
 
   updateInvoice(payload: UpdateInvoiceRequest): Observable<ApiResponse<Invoice>> {
     return this.http.put<ApiResponse<Invoice>>(`${this.BASE}/${payload.id}`, payload);
+  }
+
+  /** PATCH /api/invoices/:id?businessId= */
+  patchInvoiceReceived(invoiceId: number, received: number): Observable<PatchReceivedResponse> {
+    let p = new HttpParams();
+    if (this.businessId !== null) p = p.set('businessId', this.businessId);
+    return this.http.put<PatchReceivedResponse>(
+      `${this.BASE}/${invoiceId}`,
+      { received },
+      { params: p },
+    ).pipe(
+      catchError(err => {
+        if (err?.error?.status === 'success') return of(err.error as PatchReceivedResponse);
+        return throwError(() => err);
+      }),
+    );
   }
 
   deleteInvoice(id: string): Observable<ApiResponse<null>> {

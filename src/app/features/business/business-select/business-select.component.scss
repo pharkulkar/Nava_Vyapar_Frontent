@@ -258,3 +258,69 @@
 
   mat-icon { font-size: 13px; width: 13px; height: 13px; }
 }
+
+/* ── Create Business Form ── */
+.create-form {
+  @apply flex flex-col gap-4;
+}
+
+.field { @apply flex flex-col gap-1.5; }
+
+.field-label {
+  @apply text-sm font-medium text-gray-700 dark:text-white/80;
+  .required { @apply text-red-500; }
+  .optional  { @apply text-gray-400 dark:text-white/40 font-normal text-xs; }
+}
+
+.field-control {
+  @apply flex items-center gap-3 rounded-xl border border-gray-300 bg-white px-3.5
+         transition-all duration-200
+         focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/15
+         dark:border-white/10 dark:bg-white/5 dark:focus-within:border-primary-400;
+  &.error { @apply border-red-400 focus-within:border-red-400 focus-within:ring-red-400/15; }
+  &.textarea-wrap { @apply items-start; }
+}
+
+.field-icon {
+  @apply text-gray-400 dark:text-white/40 shrink-0;
+  font-size: 18px; width: 18px; height: 18px;
+}
+
+.field-input {
+  @apply flex-1 bg-transparent py-3 text-sm text-gray-900 outline-none
+         placeholder:text-gray-400 dark:text-white dark:placeholder:text-white/30;
+}
+
+.field-textarea {
+  @apply flex-1 bg-transparent py-3 text-sm text-gray-900 outline-none resize-none
+         placeholder:text-gray-400 dark:text-white dark:placeholder:text-white/30;
+  min-height: 56px;
+}
+
+.field-row {
+  @apply grid grid-cols-2 gap-4;
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
+}
+
+.create-btn {
+  @apply flex items-center justify-center gap-2 h-12 rounded-xl mt-2
+         bg-primary-600 text-white font-semibold text-sm
+         shadow-lg shadow-primary-600/25
+         hover:bg-primary-700 active:scale-[0.99]
+         disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none
+         transition-all duration-200;
+}
+
+/* ── Add business footer button ── */
+.add-biz-btn {
+  @apply flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+         text-primary-600 dark:text-primary-400
+         border border-primary-200 dark:border-primary-700
+         hover:bg-primary-50 dark:hover:bg-primary-900/20
+         transition-all duration-200;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.biz-footer {
+  @apply flex items-center justify-between pt-2;
+}

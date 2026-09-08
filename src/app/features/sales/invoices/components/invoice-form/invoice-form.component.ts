@@ -141,24 +141,53 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   private _loadInvoice(id: string): void {
-    this.invoiceService.getInvoice(id).subscribe({
-      next: res => {
-        const inv = res.data;
-        this.invoiceNumber = inv.invoiceNumber;
+    this.invoiceService.getInvoiceDetail(Number(id)).subscribe({
+      next: inv => {
+        this.invoiceNumber = inv.billNo;
         this.form = {
-          customerName: inv.customerName,
-          customerPhone: inv.customerPhone ?? '',
-          customerEmail: inv.customerEmail ?? '',
+          customerName:    inv.customerName,
+          customerPhone:   inv.customerMobile ?? '',
+          customerEmail:   '',
           customerAddress: inv.customerAddress ?? '',
-          customerGstin: inv.customerGstin ?? '',
-          issueDate: inv.issueDate,
-          dueDate: inv.dueDate,
-          notes: inv.notes ?? '',
-          termsAndConditions: inv.termsAndConditions ?? '',
-          globalDiscount: 0,
-          received: 0,
+          customerGstin:   '',
+          issueDate:       inv.date ? inv.date.split('T')[0] : this._today(),
+          dueDate:         this._today(),
+          notes:           '',
+          termsAndConditions: '',
+          globalDiscount:  Number(inv.discount) || 0,
+          received:        Number(inv.received) || 0,
         };
-        this.lineItems.set([...inv.lineItems]);
+
+        // Map ApiInvoiceItem → InvoiceLineItem
+        const lineItems: InvoiceLineItem[] = (inv.items ?? []).map(item => {
+          const price    = Number(item.price)    || 0;
+          const qty      = item.qty              || 1;
+          const discPct  = Number(item.discount) || 0;
+          const gstRate  = Number(item.gstRate)  || 0;
+          const subtotal       = +(price * qty).toFixed(2);
+          const discountAmount = +((subtotal * discPct) / 100).toFixed(2);
+          const taxable        = subtotal - discountAmount;
+          const taxAmount      = +((taxable * gstRate) / 100).toFixed(2);
+          const total          = +(taxable + taxAmount).toFixed(2);
+
+          return {
+            id:              String(item.id),
+            productId:       String(item.productId),
+            productName:     item.productName,
+            sku:             '',
+            unit:            '',
+            quantity:        qty,
+            unitPrice:       price,
+            discountPercent: discPct,
+            discountAmount,
+            taxRate:         gstRate,
+            taxAmount,
+            subtotal,
+            total,
+          };
+        });
+
+        this.lineItems.set(lineItems);
       },
       error: () => {
         this.toast.error('Failed to load invoice');
@@ -374,14 +403,24 @@ export class InvoiceFormComponent implements OnInit {
     };
 
     if (this.isEdit) {
-      this.invoiceService.updateInvoice({ id: this.editId } as any).subscribe({
+      this.invoiceService.patchInvoiceReceived(
+        Number(this.editId),
+        this.totals().grandTotal,
+      ).subscribe({
         next: (res: any) => {
-          this.toast.success(res.displayMessage ?? res.message ?? 'Invoice updated successfully');
+          this.toast.success(res.displayMessage ?? res.statusMessage ?? 'Invoice updated successfully');
           this.saving.set(false);
           this.goBack();
         },
         error: (err: any) => {
-          this.toast.error(err?.error?.displayMessage ?? err?.error?.message ?? 'Failed to update invoice');
+          const body = err?.error;
+          if (body?.status === 'success') {
+            this.toast.success(body.displayMessage ?? 'Invoice updated');
+            this.saving.set(false);
+            this.goBack();
+            return;
+          }
+          this.toast.error(body?.displayMessage ?? body?.message ?? 'Failed to update invoice');
           this.saving.set(false);
         },
       });

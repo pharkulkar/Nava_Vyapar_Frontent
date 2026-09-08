@@ -10,24 +10,17 @@
         <span class="brand-name">Nava Vyapar</span>
       </div>
 
-      <h2 class="aside-title">Select your business to continue.</h2>
+      <h2 class="aside-title">
+        {{ showForm() ? 'Register your first business.' : 'Select your business to continue.' }}
+      </h2>
       <p class="aside-subtitle">
         Each business has its own invoices, products, and reports — fully isolated.
       </p>
 
       <ul class="aside-features">
-        <li>
-          <mat-icon>receipt_long</mat-icon>
-          <span>Separate invoice ledgers per business</span>
-        </li>
-        <li>
-          <mat-icon>inventory_2</mat-icon>
-          <span>Independent product catalogues</span>
-        </li>
-        <li>
-          <mat-icon>bar_chart</mat-icon>
-          <span>Business-specific reports & insights</span>
-        </li>
+        <li><mat-icon>receipt_long</mat-icon><span>Separate invoice ledgers per business</span></li>
+        <li><mat-icon>inventory_2</mat-icon><span>Independent product catalogues</span></li>
+        <li><mat-icon>bar_chart</mat-icon><span>Business-specific reports & insights</span></li>
       </ul>
 
       <div class="aside-footer">
@@ -40,92 +33,164 @@
   <main class="biz-main">
     <div class="biz-card">
 
-      <header class="biz-header">
-        <div class="biz-header-top">
-          <div>
-            <h1 class="biz-title">{{ isSwitching ? 'Switch Business' : 'Choose a Business' }}</h1>
-            <p class="biz-subtitle">
-              {{ isSwitching ? 'Select a different business to work with.' : 'Select the business you want to work with right now.' }}
-            </p>
+      <!-- ════════════════════════════
+           CREATE BUSINESS FORM
+      ════════════════════════════ -->
+      <ng-container *ngIf="showForm()">
+        <header class="biz-header">
+          <div class="biz-header-top">
+            <div>
+              <h1 class="biz-title">Add Your Business</h1>
+              <p class="biz-subtitle">Fill in your business details to get started.</p>
+            </div>
+            <button *ngIf="businesses().length > 0" class="back-btn" type="button" (click)="cancelCreate()">
+              <mat-icon>arrow_back</mat-icon><span>Back</span>
+            </button>
           </div>
-          <button *ngIf="isSwitching" class="back-btn" type="button" (click)="goBack()">
-            <mat-icon>arrow_back</mat-icon>
-            <span>Back</span>
+        </header>
+
+        <!-- Error banner -->
+        <div class="error-banner" *ngIf="error()">
+          <mat-icon>error_outline</mat-icon>{{ error() }}
+        </div>
+
+        <!-- Form -->
+        <div class="create-form">
+          <!-- Business Name -->
+          <div class="field">
+            <label class="field-label" for="biz-name">Business Name <span class="required">*</span></label>
+            <div class="field-control" [class.error]="!newBusiness.name && saving()">
+              <mat-icon class="field-icon">storefront</mat-icon>
+              <input id="biz-name" class="field-input" type="text"
+                     [(ngModel)]="newBusiness.name"
+                     placeholder="e.g. Sharma General Store" autocomplete="off" />
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="field">
+            <label class="field-label" for="biz-address">Address</label>
+            <div class="field-control textarea-wrap">
+              <mat-icon class="field-icon" style="align-self:flex-start;margin-top:12px">location_on</mat-icon>
+              <textarea id="biz-address" class="field-textarea"
+                        [(ngModel)]="newBusiness.address" rows="2"
+                        placeholder="12, Gandhi Nagar, Jaipur"></textarea>
+            </div>
+          </div>
+
+          <!-- GST + Contact row -->
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="biz-gst">GST Number <span class="optional">(optional)</span></label>
+              <div class="field-control">
+                <mat-icon class="field-icon">receipt</mat-icon>
+                <input id="biz-gst" class="field-input" type="text"
+                       [(ngModel)]="newBusiness.gstNumber"
+                       placeholder="08AABCU9603R1ZX" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="biz-phone">Contact Number</label>
+              <div class="field-control">
+                <mat-icon class="field-icon">phone</mat-icon>
+                <input id="biz-phone" class="field-input" type="tel"
+                       [(ngModel)]="newBusiness.contactNumber"
+                       placeholder="9876543210" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button class="create-btn" type="button" (click)="createBusiness()" [disabled]="saving()">
+            <mat-spinner *ngIf="saving()" diameter="18" />
+            <mat-icon *ngIf="!saving()">add_business</mat-icon>
+            <span>{{ saving() ? 'Registering…' : 'Register Business' }}</span>
           </button>
         </div>
-      </header>
 
-      <!-- Loading -->
-      <div class="state-center" *ngIf="loading()">
-        <mat-spinner diameter="40" />
-        <p class="state-text">Fetching your businesses…</p>
-      </div>
+        <footer class="biz-footer">
+          <button class="logout-btn" type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon><span>Sign out</span>
+          </button>
+        </footer>
+      </ng-container>
 
-      <!-- Error -->
-      <div class="error-banner" *ngIf="error() && !loading()">
-        <mat-icon>error_outline</mat-icon>
-        {{ error() }}
-      </div>
+      <!-- ════════════════════════════
+           BUSINESS LIST
+      ════════════════════════════ -->
+      <ng-container *ngIf="!showForm()">
+        <header class="biz-header">
+          <div class="biz-header-top">
+            <div>
+              <h1 class="biz-title">{{ isSwitching ? 'Switch Business' : 'Choose a Business' }}</h1>
+              <p class="biz-subtitle">
+                {{ isSwitching ? 'Select a different business to work with.' : 'Select the business you want to work with.' }}
+              </p>
+            </div>
+            <button *ngIf="isSwitching" class="back-btn" type="button" (click)="goBack()">
+              <mat-icon>arrow_back</mat-icon><span>Back</span>
+            </button>
+          </div>
+        </header>
 
-      <!-- Empty -->
-      <div class="state-center" *ngIf="!loading() && !error() && businesses().length === 0">
-        <div class="empty-icon">
-          <mat-icon>business</mat-icon>
+        <!-- Loading -->
+        <div class="state-center" *ngIf="loading()">
+          <mat-spinner diameter="40" />
+          <p class="state-text">Fetching your businesses…</p>
         </div>
-        <p class="state-title">No businesses found</p>
-        <p class="state-text">You don't have any businesses registered yet.</p>
-      </div>
 
-      <!-- Business Cards -->
-      <div class="biz-grid" *ngIf="!loading() && businesses().length > 0">
-        <button
-          *ngFor="let biz of businesses()"
-          class="biz-card-item"
-          [class.selecting]="selecting() === biz.id"
-          [class.active]="currentBusiness()?.id === biz.id && selecting() === null"
-          (click)="selectBusiness(biz)"
-          type="button"
-        >
-          <div class="biz-card-header">
-            <div class="biz-avatar">
-              {{ biz.name.charAt(0).toUpperCase() }}
-            </div>
-            <div class="biz-info">
-              <p class="biz-name">{{ biz.name }}</p>
-              <p class="biz-address">{{ biz.address }}</p>
-            </div>
-            <span *ngIf="currentBusiness()?.id === biz.id && selecting() === null" class="active-badge">
-              <mat-icon>check_circle</mat-icon> Active
-            </span>
-            <mat-spinner
-              *ngIf="selecting() === biz.id"
-              diameter="20"
-              class="select-spinner"
-            />
-            <mat-icon *ngIf="selecting() !== biz.id && currentBusiness()?.id !== biz.id" class="arrow-icon">
-              arrow_forward
-            </mat-icon>
-          </div>
+        <!-- Error -->
+        <div class="error-banner" *ngIf="error() && !loading()">
+          <mat-icon>error_outline</mat-icon>{{ error() }}
+        </div>
 
-          <div class="biz-meta">
-            <div class="meta-item" *ngIf="biz.gstNumber">
-              <mat-icon>receipt</mat-icon>
-              <span>GST: {{ biz.gstNumber }}</span>
+        <!-- Business Cards -->
+        <div class="biz-grid" *ngIf="!loading() && businesses().length > 0">
+          <button
+            *ngFor="let biz of businesses()"
+            class="biz-card-item"
+            [class.selecting]="selecting() === biz.id"
+            [class.active]="currentBusiness()?.id === biz.id && selecting() === null"
+            (click)="selectBusiness(biz)"
+            type="button"
+          >
+            <div class="biz-card-header">
+              <div class="biz-avatar">{{ biz.name.charAt(0).toUpperCase() }}</div>
+              <div class="biz-info">
+                <p class="biz-name">{{ biz.name }}</p>
+                <p class="biz-address">{{ biz.address }}</p>
+              </div>
+              <span *ngIf="currentBusiness()?.id === biz.id && selecting() === null" class="active-badge">
+                <mat-icon>check_circle</mat-icon> Active
+              </span>
+              <mat-spinner *ngIf="selecting() === biz.id" diameter="20" class="select-spinner" />
+              <mat-icon *ngIf="selecting() !== biz.id && currentBusiness()?.id !== biz.id" class="arrow-icon">
+                arrow_forward
+              </mat-icon>
             </div>
-            <div class="meta-item" *ngIf="biz.contactNumber">
-              <mat-icon>phone</mat-icon>
-              <span>{{ biz.contactNumber }}</span>
+            <div class="biz-meta">
+              <div class="meta-item" *ngIf="biz.gstNumber">
+                <mat-icon>receipt</mat-icon><span>GST: {{ biz.gstNumber }}</span>
+              </div>
+              <div class="meta-item" *ngIf="biz.contactNumber">
+                <mat-icon>phone</mat-icon><span>{{ biz.contactNumber }}</span>
+              </div>
             </div>
-          </div>
-        </button>
-      </div>
+          </button>
+        </div>
 
-      <footer class="biz-footer">
-        <button class="logout-btn" type="button" (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>Sign out</span>
-        </button>
-      </footer>
+        <footer class="biz-footer">
+          <!-- Add another business -->
+          <button class="add-biz-btn" type="button" (click)="openCreateForm()">
+            <mat-icon>add_business</mat-icon>
+            <span>Add Business</span>
+          </button>
+          <button class="logout-btn" type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon><span>Sign out</span>
+          </button>
+        </footer>
+      </ng-container>
 
     </div>
   </main>
