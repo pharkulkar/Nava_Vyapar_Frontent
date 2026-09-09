@@ -122,7 +122,25 @@
 .field-select {
   @apply flex-1 bg-transparent text-sm text-gray-900 outline-none cursor-pointer
          dark:text-white appearance-none;
-  option { @apply bg-white dark:bg-gray-900; }
+  option {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm py-2 px-3;
+    padding: 8px 12px;
+  }
+  option:hover, option:focus, option:checked {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+  }
+}
+
+.category-select-wrap {
+  min-width: 180px;
+}
+
+.category-select {
+  option[value=""] {
+    color: #9ca3af;
+    font-style: italic;
+  }
 }
 
 .select-caret {

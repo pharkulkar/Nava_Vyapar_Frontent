@@ -9,9 +9,9 @@
       <span class="inv-number" *ngIf="isEdit">{{ invoiceNumber }}</span>
     </div>
     <div class="topbar-actions">
-      <button mat-stroked-button (click)="saveDraft()" [disabled]="saving()">
+      <!-- <button mat-stroked-button (click)="saveDraft()" [disabled]="saving()">
         <mat-icon>save</mat-icon> Save Draft
-      </button>
+      </button> -->
       <button mat-flat-button color="primary" (click)="saveAndSend()" [disabled]="saving()">
         <mat-spinner diameter="18" *ngIf="saving()"></mat-spinner>
         <mat-icon *ngIf="!saving()">send</mat-icon>
@@ -172,7 +172,8 @@
             <span class="col-product">Product</span>
             <span class="col-qty">Qty</span>
             <span class="col-price">Unit Price</span>
-            <span class="col-disc">Disc %</span>
+            <!-- Disc % — commented out for now -->
+            <!-- <span class="col-disc">Disc %</span> -->
             <span class="col-tax">Tax %</span>
             <span class="col-total">Total</span>
             <span class="col-del"></span>
@@ -181,12 +182,12 @@
           <div class="line-item-row" *ngFor="let item of lineItems(); let i = index">
             <div class="col-product">
               <p class="item-name">{{ item.productName }}</p>
-              <p class="item-sku">{{ item.sku }} · {{ item.unit }}</p>
+              <p class="item-sku">{{ item.sku }}{{ item.sku && item.unit ? ' · ' : '' }}{{ item.unit }}</p>
             </div>
 
             <div class="col-qty">
               <div class="qty-control">
-                <button mat-icon-button (click)="changeQty(i, -1)" [disabled]="item.quantity <= 1">
+                <button class="qty-btn" type="button" (click)="changeQty(i, -1)" [disabled]="item.quantity <= 1">
                   <mat-icon>remove</mat-icon>
                 </button>
                 <input
@@ -196,7 +197,7 @@
                   (change)="onQtyChange(i, $event)"
                   min="1"
                 />
-                <button mat-icon-button (click)="changeQty(i, 1)">
+                <button class="qty-btn" type="button" (click)="changeQty(i, 1)">
                   <mat-icon>add</mat-icon>
                 </button>
               </div>
@@ -212,6 +213,8 @@
               />
             </div>
 
+            <!-- Disc % input — commented out for now -->
+            <!--
             <div class="col-disc">
               <input
                 class="price-input"
@@ -222,6 +225,7 @@
                 max="100"
               />
             </div>
+            -->
 
             <div class="col-tax">
               <span class="tax-badge">{{ item.taxRate }}%</span>
@@ -331,29 +335,33 @@
         <h2 class="section-title"><mat-icon>bolt</mat-icon> Quick Actions</h2>
 
         <!-- Invoice-level discount -->
-        <div class="discount-row">
-          <label class="field-label">Invoice Discount</label>
-          <div class="discount-inputs">
-            <!-- Mode toggle -->
+        <div class="discount-widget">
+          <p class="discount-widget-label">
+            <mat-icon>local_offer</mat-icon>
+            Invoice Discount
+          </p>
+          <div class="discount-toggle-row">
             <div class="mode-toggle">
               <button type="button"
-                class="mode-btn" [class.active]="form.discountMode === 'flat'"
-                (click)="form.discountMode = 'flat'">₹</button>
-              <button type="button"
-                class="mode-btn" [class.active]="form.discountMode === 'percent'"
-                (click)="form.discountMode = 'percent'">%</button>
-            </div>
-            <div class="field-control disc-input-wrap">
-              <mat-icon class="field-icon">local_offer</mat-icon>
-              <input class="field-input" type="number" min="0"
-                     [(ngModel)]="form.discountValue"
-                     [placeholder]="form.discountMode === 'percent' ? '0 %' : '0.00 ₹'" />
+                class="mode-btn" [class.active]="discountMode === 'flat'"
+                (click)="discountMode = 'flat'">₹ Flat</button>
+              <!-- <button type="button"
+                class="mode-btn" [class.active]="discountMode === 'percent'"
+                (click)="discountMode = 'percent'">% Off</button> -->
             </div>
           </div>
-          <p class="discount-preview" *ngIf="totals().invDiscount > 0">
-            Saving ₹{{ totals().invDiscount | number:'1.2-2' }}
-            · Grand Total: ₹{{ totals().grandTotal | number:'1.2-2' }}
-          </p>
+          <div class="discount-input-row">
+            <div class="field-control disc-input-wrap">
+              <span class="disc-symbol">{{ discountMode === 'flat' ? '₹' : '%' }}</span>
+              <input class="field-input" type="number" min="0"
+                     [(ngModel)]="discountValue"
+                     [placeholder]="discountMode === 'percent' ? 'Enter %' : 'Enter amount'" />
+            </div>
+          </div>
+          <div class="discount-preview" *ngIf="totals().invDiscount > 0">
+            <mat-icon>check_circle</mat-icon>
+            <span>Saving <strong>₹{{ totals().invDiscount | number:'1.2-2' }}</strong> · Grand Total: <strong>₹{{ totals().grandTotal | number:'1.2-2' }}</strong></span>
+          </div>
         </div>
 
         <button

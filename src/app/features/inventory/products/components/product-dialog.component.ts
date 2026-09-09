@@ -24,7 +24,7 @@ export interface ProductDialogData {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule, NgFor, NgIf, DecimalPipe,
+    ReactiveFormsModule, NgFor, NgIf,
     MatDialogModule, MatButtonModule, MatIconModule,
     MatProgressSpinnerModule, MatDividerModule,
   ],
@@ -142,7 +142,8 @@ export interface ProductDialogData {
             </div>
           </div>
 
-          <!-- Purchase Price -->
+          <!-- Purchase Price — commented out for now -->
+          <!--
           <div class="field">
             <label class="field-label" for="pd-purchase">Purchase Price (₹) <span class="optional">(opt)</span></label>
             <div class="field-control">
@@ -151,6 +152,7 @@ export interface ProductDialogData {
                      min="0" placeholder="0.00" />
             </div>
           </div>
+          -->
 
           <!-- Tax Rate (GST) -->
           <div class="field">
@@ -165,7 +167,8 @@ export interface ProductDialogData {
           </div>
         </div>
 
-        <!-- Margin preview -->
+        <!-- Margin preview — commented out for now -->
+        <!--
         <div class="margin-preview" *ngIf="margin() !== null">
           <mat-icon>trending_up</mat-icon>
           <span class="margin-label">Profit Margin:</span>
@@ -173,14 +176,15 @@ export interface ProductDialogData {
             {{ margin()! > 0 ? '+' : '' }}{{ margin() | number:'1.1-1' }}%
           </span>
         </div>
+        -->
 
+        <!-- Section: Stock & Status — commented out for now -->
+        <!--
         <mat-divider />
 
-        <!-- Section: Stock & Status -->
         <p class="pd-section-label"><mat-icon>warehouse</mat-icon> Stock & Status</p>
 
         <div class="pd-grid-3">
-          <!-- Opening Stock -->
           <div class="field">
             <label class="field-label" for="pd-stock">Opening Stock</label>
             <div class="field-control">
@@ -190,7 +194,6 @@ export interface ProductDialogData {
             </div>
           </div>
 
-          <!-- Low Stock Alert -->
           <div class="field">
             <label class="field-label" for="pd-threshold">Low Stock Alert</label>
             <div class="field-control">
@@ -200,7 +203,6 @@ export interface ProductDialogData {
             </div>
           </div>
 
-          <!-- Status -->
           <div class="field">
             <label class="field-label" for="pd-status">Status</label>
             <div class="field-control">
@@ -214,6 +216,7 @@ export interface ProductDialogData {
             </div>
           </div>
         </div>
+        -->
 
       </form>
 
@@ -404,12 +407,14 @@ export class ProductDialogComponent implements OnInit {
     category:          ['', Validators.required],
     unit:              ['pcs' as Product['unit'], Validators.required],
     description:       [''],
-    purchasePrice:     [0, [Validators.required, Validators.min(0)]],
+    // purchasePrice — commented out for now
+    // purchasePrice:     [0, [Validators.required, Validators.min(0)]],
     sellingPrice:      [0, [Validators.required, Validators.min(0)]],
     taxRate:           [18, Validators.required],
-    stockQuantity:     [0, Validators.min(0)],
-    lowStockThreshold: [10, Validators.min(0)],
-    status:            ['active' as Product['status'], Validators.required],
+    // Stock & Status — commented out for now
+    // stockQuantity:     [0, Validators.min(0)],
+    // lowStockThreshold: [10, Validators.min(0)],
+    // status:            ['active' as Product['status'], Validators.required],
   });
 
   get f() { return this.form.controls; }
@@ -418,37 +423,34 @@ export class ProductDialogComponent implements OnInit {
     if (this.data?.product) {
       const p = this.data.product as unknown as import('../product.model').ApiProduct;
       this.form.patchValue({
-        name:              p.name,
-        sku:               p.productCode,
-        category:          p.category,
-        unit:              (p.uom as Product['unit']) ?? 'pcs',
-        sellingPrice:      Number(p.price),
-        taxRate:           Number(p.gstRate),
-        // fields not in ApiProduct — leave at defaults
-        purchasePrice:     0,
-        stockQuantity:     0,
-        lowStockThreshold: 10,
-        status:            'active',
+        name:          p.name,
+        sku:           p.productCode,
+        category:      p.category,
+        unit:          (p.uom as Product['unit']) ?? 'pcs',
+        sellingPrice:  Number(p.price),
+        taxRate:       Number(p.gstRate),
+        // purchasePrice, stockQuantity, lowStockThreshold, status — commented out for now
       });
     }
-    this.form.valueChanges.subscribe(() => this._calcMargin());
-    this._calcMargin();
+    // margin calc commented out — no purchasePrice field for now
+    // this.form.valueChanges.subscribe(() => this._calcMargin());
+    // this._calcMargin();
   }
 
-  private _calcMargin(): void {
-    const { purchasePrice, sellingPrice } = this.form.getRawValue();
-    if (purchasePrice > 0 && sellingPrice > 0) {
-      this.margin.set(((sellingPrice - purchasePrice) / purchasePrice) * 100);
-    } else {
-      this.margin.set(null);
-    }
-  }
+  // private _calcMargin(): void {
+  //   const { purchasePrice, sellingPrice } = this.form.getRawValue();
+  //   if (purchasePrice > 0 && sellingPrice > 0) {
+  //     this.margin.set(((sellingPrice - purchasePrice) / purchasePrice) * 100);
+  //   } else {
+  //     this.margin.set(null);
+  //   }
+  // }
 
   onSubmit(): void {
     if (this.form.invalid || this.saving()) return;
     this.saving.set(true);
 
-    const raw = this.form.getRawValue() as CreateProductRequest;
+    const raw = this.form.getRawValue();
 
     if (this.isEdit) {
       const updatePayload: ApiProductUpdateRequest = {

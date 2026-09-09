@@ -15,8 +15,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService } from './product.service';
 import { ToastService } from '@core/services/toast.service';
 import { ProductCacheService } from '@core/business/product-cache.service';
@@ -26,8 +24,7 @@ import { ProductViewDialogComponent } from './components/product-view-dialog.com
 import { BulkUploadDialogComponent } from './components/bulk-upload-dialog.component';
 import { BulkEditDialogComponent } from './components/bulk-edit-dialog.component';
 import { PRODUCT_CATEGORIES, PRODUCT_STATUS_CONFIG } from './product.model';
-import type { ApiProduct, Product, ProductFilters, ProductStatus } from './product.model';
-import type { PaginationParams } from '@shared/models/api.model';
+import type { ApiProduct } from './product.model';
 
 @Component({
   selector: 'nv-products',
@@ -115,23 +112,11 @@ import type { PaginationParams } from '@shared/models/api.model';
       </div>
 
       <!-- Category -->
-      <div class="field-control filter-field">
+      <div class="field-control filter-field category-select-wrap">
         <mat-icon class="field-icon">category</mat-icon>
-        <select class="field-select" [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()">
+        <select class="field-select category-select" [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()">
           <option value="">All Categories</option>
-          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
-        </select>
-        <mat-icon class="select-caret">expand_more</mat-icon>
-      </div>
-
-      <!-- Status -->
-      <div class="field-control filter-field">
-        <mat-icon class="field-icon">filter_list</mat-icon>
-        <select class="field-select" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="draft">Draft</option>
+          <option *ngFor="let cat of availableCategories()" [value]="cat">{{ cat }}</option>
         </select>
         <mat-icon class="select-caret">expand_more</mat-icon>
       </div>
@@ -181,7 +166,7 @@ import type { PaginationParams } from '@shared/models/api.model';
       </div>
 
       <!-- Empty State -->
-      <div class="empty-state" *ngIf="!loading() && products().length === 0">
+      <div class="empty-state" *ngIf="!loading() && filteredCount() === 0">
         <div class="empty-illustration">
           <mat-icon>inventory_2</mat-icon>
         </div>
@@ -199,8 +184,8 @@ import type { PaginationParams } from '@shared/models/api.model';
         </button>
       </div>
 
-      <table mat-table [dataSource]="products()" matSort (matSortChange)="onSort($event)"
-             class="products-table" *ngIf="!loading() && products().length > 0">
+      <table mat-table [dataSource]="pagedProducts()" matSort (matSortChange)="onSort($event)"
+             class="products-table" *ngIf="!loading() && filteredCount() > 0">
 
         <!-- Checkbox -->
         <ng-container matColumnDef="select">
@@ -283,9 +268,9 @@ import type { PaginationParams } from '@shared/models/api.model';
               <button mat-menu-item (click)="openEditProduct(row)">
                 <mat-icon>edit</mat-icon> Edit
               </button>
-              <button mat-menu-item (click)="duplicateProduct(row)">
+              <!--<button mat-menu-item (click)="duplicateProduct(row)">
                 <mat-icon>content_copy</mat-icon> Duplicate
-              </button>
+              </button>-->
               <mat-divider />
               <button mat-menu-item (click)="deleteProduct(row)" class="text-red-600">
                 <mat-icon class="text-red-500">delete</mat-icon> Delete
@@ -303,8 +288,8 @@ import type { PaginationParams } from '@shared/models/api.model';
 
       <!-- Paginator -->
       <mat-paginator
-        *ngIf="totalCount() > 0"
-        [length]="totalCount()"
+        *ngIf="filteredCount() > 0"
+        [length]="filteredCount()"
         [pageSize]="pageSize"
         [pageSizeOptions]="[10, 25, 50, 100]"
         [pageIndex]="currentPage() - 1"
@@ -321,7 +306,6 @@ export class ProductsComponent implements OnInit {
   private readonly productCache = inject(ProductCacheService);
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(MatDialog);
-  private readonly search$ = new Subject<string>();
 
   protected readonly statusConfig = PRODUCT_STATUS_CONFIG as Record<
     string,
@@ -330,55 +314,97 @@ export class ProductsComponent implements OnInit {
   protected readonly displayedColumns = ['select', 'name', 'category', 'price', 'uom', 'gstRate', 'actions'];
   protected readonly categories = PRODUCT_CATEGORIES;
 
+  // ── State ─────────────────────────────────────────────────────────────────
   protected readonly loading = signal(false);
-  protected readonly products = signal<ApiProduct[]>([]);
-  protected readonly totalCount = signal(0);
+  /** Full list as returned by the API — never mutated except on refresh */
+  protected readonly allProducts = signal<ApiProduct[]>([]);
   protected readonly currentPage = signal(1);
   protected readonly selectedIds = signal<Set<number>>(new Set());
   protected readonly stats = signal({ total: 0, active: 0, lowStock: 0, outOfStock: 0 });
 
-  protected searchQuery = '';
-  protected selectedCategory = '';
-  protected selectedStatus = '';
+  // Filter state as signals so computed() tracks them reactively
+  protected readonly searchQuerySignal = signal('');
+  protected readonly selectedCategorySignal = signal('');
+  protected readonly sortBySignal = signal('');
+  protected readonly sortOrderSignal = signal<'asc' | 'desc'>('asc');
+
   protected showLowStock = false;
-  protected pageSize = 10;
-  protected sortBy = '';
-  protected sortOrder: 'asc' | 'desc' = 'asc';
+  protected readonly pageSizeSignal = signal(10);
+  get pageSize(): number { return this.pageSizeSignal(); }
+  set pageSize(v: number) { this.pageSizeSignal.set(v); }
 
-  protected hasActiveFilters = computed(() =>
-    !!this.searchQuery || !!this.selectedCategory || !!this.selectedStatus || this.showLowStock,
+  // Two-way ngModel shims — read from signal, write back via setter
+  get searchQuery(): string { return this.searchQuerySignal(); }
+  set searchQuery(v: string) { this.searchQuerySignal.set(v); }
+
+  get selectedCategory(): string { return this.selectedCategorySignal(); }
+  set selectedCategory(v: string) { this.selectedCategorySignal.set(v); }
+
+  // ── Client-side derived data ───────────────────────────────────────────────
+  protected readonly availableCategories = computed(() => {
+    const fromProducts = new Set(this.allProducts().map(p => p.category).filter(Boolean));
+    this.categories.forEach(c => fromProducts.add(c));
+    return [...fromProducts].sort((a, b) => a.localeCompare(b));
+  });
+
+  protected readonly filteredProducts = computed(() => {
+    const q = this.searchQuerySignal().toLowerCase().trim();
+    const cat = this.selectedCategorySignal();
+    const sortBy = this.sortBySignal();
+    const sortOrder = this.sortOrderSignal();
+    let result = this.allProducts();
+
+    if (q) {
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.productCode.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q),
+      );
+    }
+    if (cat) {
+      result = result.filter(p => p.category === cat);
+    }
+
+    if (sortBy) {
+      const key = sortBy as keyof ApiProduct;
+      result = [...result].sort((a, b) => {
+        const av = String(a[key] ?? '').toLowerCase();
+        const bv = String(b[key] ?? '').toLowerCase();
+        const cmp = av.localeCompare(bv, undefined, { numeric: true });
+        return sortOrder === 'desc' ? -cmp : cmp;
+      });
+    }
+
+    return result;
+  });
+
+  protected readonly filteredCount = computed(() => this.filteredProducts().length);
+
+  protected readonly pagedProducts = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSizeSignal();
+    return this.filteredProducts().slice(start, start + this.pageSizeSignal());
+  });
+
+  protected readonly totalCount = computed(() => this.allProducts().length);
+
+  protected readonly hasActiveFilters = computed(() =>
+    !!this.searchQuerySignal() || !!this.selectedCategorySignal() || this.showLowStock,
   );
-
-  constructor() {
-    this.search$.pipe(
-      debounceTime(350),
-      distinctUntilChanged(),
-      takeUntilDestroyed(),
-    ).subscribe(() => {
-      this.currentPage.set(1);
-      this.loadProducts();
-    });
-  }
 
   ngOnInit(): void { this.loadProducts(); }
 
-  private loadProducts(): void {
+  private loadProducts(force = false): void {
     this.loading.set(true);
-    const params: PaginationParams & ProductFilters = {
-      page: this.currentPage(),
-      pageSize: this.pageSize,
-      search: this.searchQuery || undefined,
-      category: this.selectedCategory || undefined,
-      status: (this.selectedStatus as ProductStatus) || undefined,
-      lowStock: this.showLowStock || undefined,
-      sortBy: this.sortBy || undefined,
-      sortOrder: this.sortOrder,
-    };
 
-    this.productService.getProducts(params).subscribe({
-      next: res => {
-        this.products.set(res.data);
-        this.totalCount.set(res.total);
+    this.productCache.getProducts(force).subscribe({
+      next: items => {
+        this.allProducts.set(items);
+        this.stats.set({
+          total: items.length,
+          active: items.length,
+          lowStock: 0,
+          outOfStock: 0,
+        });
         this.loading.set(false);
       },
       error: () => {
@@ -388,52 +414,53 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  private _updateStats(products: ApiProduct[]): void {
-    this.stats.set({
-      total: this.totalCount(),
-      active: products.length,
-      lowStock: 0,
-      outOfStock: 0,
-    });
+  onSearch(_val: string): void {
+    this.currentPage.set(1);
   }
 
-  onSearch(val: string): void { this.search$.next(val); }
-  clearSearch(): void { this.searchQuery = ''; this.search$.next(''); }
-  onFilterChange(): void { this.currentPage.set(1); this.loadProducts(); }
-  toggleLowStock(): void { this.showLowStock = !this.showLowStock; this.onFilterChange(); }
+  clearSearch(): void {
+    this.searchQuerySignal.set('');
+    this.currentPage.set(1);
+  }
+
+  onFilterChange(): void {
+    this.currentPage.set(1);
+  }
+
+  toggleLowStock(): void {
+    this.showLowStock = !this.showLowStock;
+    this.onFilterChange();
+  }
 
   refresh(): void {
     this.productCache.invalidate();
-    this.loadProducts();
+    this.loadProducts(true);
   }
 
   clearFilters(): void {
-    this.searchQuery = '';
-    this.selectedCategory = '';
-    this.selectedStatus = '';
+    this.searchQuerySignal.set('');
+    this.selectedCategorySignal.set('');
     this.showLowStock = false;
     this.currentPage.set(1);
-    this.loadProducts();
   }
 
   onSort(sort: Sort): void {
-    this.sortBy = sort.active;
-    this.sortOrder = sort.direction as 'asc' | 'desc' || 'asc';
-    this.loadProducts();
+    this.sortBySignal.set(sort.active);
+    this.sortOrderSignal.set((sort.direction as 'asc' | 'desc') || 'asc');
+    this.currentPage.set(1);
   }
 
   onPageChange(e: PageEvent): void {
     this.pageSize = e.pageSize;
     this.currentPage.set(e.pageIndex + 1);
-    this.loadProducts();
   }
 
   // ── Selection ─────────────────────────────────────────────────────────────
-  isAllSelected(): boolean { return this.products().length > 0 && this.products().every(p => this.selectedIds().has(p.id)); }
+  isAllSelected(): boolean { return this.pagedProducts().length > 0 && this.pagedProducts().every(p => this.selectedIds().has(p.id)); }
   isSomeSelected(): boolean { return this.selectedIds().size > 0 && !this.isAllSelected(); }
 
   toggleAll(checked: boolean): void {
-    this.selectedIds.set(checked ? new Set(this.products().map(p => p.id)) : new Set());
+    this.selectedIds.set(checked ? new Set(this.pagedProducts().map(p => p.id)) : new Set());
   }
 
   toggleSelect(id: number): void {
@@ -455,7 +482,7 @@ export class ProductsComponent implements OnInit {
       maxHeight: '90vh',
       panelClass: 'nv-dialog',
     }).afterClosed().subscribe(result => {
-      if (result) this.loadProducts();
+      if (result) { this.productCache.invalidate(); this.loadProducts(true); }
     });
   }
 
@@ -473,7 +500,8 @@ export class ProductsComponent implements OnInit {
         if (result === 'edit') {
           this.openEditProduct(product);
         } else if (result) {
-          this.loadProducts();
+          this.productCache.invalidate();
+          this.loadProducts(true);
         }
       });
   }
@@ -486,24 +514,24 @@ export class ProductsComponent implements OnInit {
       maxHeight: '90vh',
       panelClass: 'nv-dialog',
     }).afterClosed().subscribe(result => {
-      if (result) this.loadProducts();
+      if (result) { this.productCache.invalidate(); this.loadProducts(true); }
     });
   }
 
-  duplicateProduct(product: ApiProduct): void {
-    const apiPayload = {
-      productCode: `${product.productCode}-COPY`,
-      name:        `${product.name} (Copy)`,
-      category:    product.category,
-      price:       Number(product.price),
-      uom:         product.uom,
-      gstRate:     Number(product.gstRate),
-    };
-    this.productService.addProducts([apiPayload]).subscribe({
-      next: () => { this.toast.success('Product duplicated'); this.loadProducts(); },
-      error: () => this.toast.error('Failed to duplicate product'),
-    });
-  }
+  // duplicateProduct(product: ApiProduct): void {
+  //   const apiPayload = {
+  //     productCode: `${product.productCode}-COPY`,
+  //     name:        `${product.name} (Copy)`,
+  //     category:    product.category,
+  //     price:       Number(product.price),
+  //     uom:         product.uom,
+  //     gstRate:     Number(product.gstRate),
+  //   };
+  //   this.productService.addProducts([apiPayload]).subscribe({
+  //     next: () => { this.toast.success('Product duplicated'); this.productCache.invalidate(); this.loadProducts(true); },
+  //     error: () => this.toast.error('Failed to duplicate product'),
+  //   });
+  // }
 
   deleteProduct(product: ApiProduct): void {
     if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
@@ -511,14 +539,14 @@ export class ProductsComponent implements OnInit {
       next: res => {
         this.toast.success(res.displayMessage ?? 'Product deleted');
         this.productCache.invalidate();
-        this.loadProducts();
+        this.loadProducts(true);
       },
       error: () => this.toast.error('Failed to delete product'),
     });
   }
 
   editSelected(): void {
-    const selectedProducts = this.products().filter(p => this.selectedIds().has(p.id));
+    const selectedProducts = this.pagedProducts().filter(p => this.selectedIds().has(p.id));
     if (selectedProducts.length === 0) return;
 
     this.dialog.open(BulkEditDialogComponent, {
@@ -531,7 +559,7 @@ export class ProductsComponent implements OnInit {
       if (result) {
         this.clearSelection();
         this.productCache.invalidate();
-        this.loadProducts();
+        this.loadProducts(true);
       }
     });
   }
@@ -544,7 +572,7 @@ export class ProductsComponent implements OnInit {
         this.toast.success(res.displayMessage ?? `${ids.length} products deleted`);
         this.clearSelection();
         this.productCache.invalidate();
-        this.loadProducts();
+        this.loadProducts(true);
       },
       error: () => this.toast.error('Failed to delete products'),
     });
@@ -556,14 +584,14 @@ export class ProductsComponent implements OnInit {
       maxHeight: '90vh',
       panelClass: 'nv-dialog',
     }).afterClosed().subscribe(result => {
-      if (result) this.loadProducts();
+      if (result) { this.productCache.invalidate(); this.loadProducts(true); }
     });
   }
 
   exportCsv(): void {
     const rows = [
       ['Name', 'Product Code', 'Category', 'Price', 'UOM', 'GST Rate'],
-      ...this.products().map(p => [
+      ...this.filteredProducts().map(p => [
         p.name,
         p.productCode,
         p.category,

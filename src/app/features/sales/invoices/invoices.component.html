@@ -122,7 +122,7 @@
   </div>
 
   <!-- Empty State -->
-  <div class="empty-state" *ngIf="!loading() && invoices().length === 0">
+  <div class="empty-state" *ngIf="!loading() && filteredCount() === 0">
     <div class="empty-illustration">
       <mat-icon>receipt_long</mat-icon>
     </div>
@@ -140,8 +140,8 @@
     </button>
   </div>
 
-  <div class="table-scroll" *ngIf="!loading() && invoices().length > 0">
-    <table mat-table [dataSource]="invoices()" class="invoices-table">
+  <div class="table-scroll" *ngIf="!loading() && filteredCount() > 0">
+    <table mat-table [dataSource]="pagedInvoices()" class="invoices-table">
       <!-- Invoice No -->
       <ng-container matColumnDef="billNo">
         <th mat-header-cell *matHeaderCellDef>Invoice #</th>
@@ -233,8 +233,8 @@
   </div>
 
   <mat-paginator
-    *ngIf="totalCount() > 0"
-    [length]="totalCount()"
+    *ngIf="filteredCount() > 0"
+    [length]="filteredCount()"
     [pageSize]="pageSize"
     [pageSizeOptions]="[10, 25, 50]"
     [pageIndex]="currentPage() - 1"

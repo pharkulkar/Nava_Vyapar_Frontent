@@ -97,10 +97,24 @@ export class InvoiceFormComponent implements OnInit {
     dueDate: this._addDays(30),
     notes: 'Thank you for your business!',
     termsAndConditions: 'Payment due within 30 days.',
+    // discountMode and discountValue are backed by signals below — these
+    // properties are never read directly; the getters/setters on `form` delegate
     discountMode:  'flat',
     discountValue: 0,
     received:      0,
   };
+
+  // Signals that back the discount fields so computed() tracks them reactively
+  private readonly _discountMode  = signal<'percent' | 'flat'>('flat');
+  private readonly _discountValue = signal<number>(0);
+
+  // Proxy the plain InvoiceForm object's discount fields through signals.
+  // Angular's ngModel calls the getter/setter, which reads/writes the signal.
+  get discountMode():  'percent' | 'flat' { return this._discountMode(); }
+  set discountMode(v: 'percent' | 'flat') { this._discountMode.set(v); this.form.discountMode = v; }
+
+  get discountValue():  number { return this._discountValue(); }
+  set discountValue(v: number) { this._discountValue.set(v); this.form.discountValue = v; }
 
   protected readonly totals = computed(() => {
     const items = this.lineItems();
@@ -110,9 +124,9 @@ export class InvoiceFormComponent implements OnInit {
     const totalTax        = items.reduce((s, i) => s + i.taxAmount, 0);
     const beforeInvDisc   = taxableAmount + totalTax;
 
-    // Invoice-level discount
-    const mode  = this.form.discountMode;
-    const val   = this.form.discountValue || 0;
+    // Invoice-level discount — read from signals so computed() re-runs on change
+    const mode  = this._discountMode();
+    const val   = this._discountValue() || 0;
     const invDiscount = mode === 'percent'
       ? +((beforeInvDisc * val) / 100).toFixed(2)
       : +Math.min(val, beforeInvDisc).toFixed(2);
@@ -180,18 +194,15 @@ export class InvoiceFormComponent implements OnInit {
           discountValue: Number(inv.discount) || 0,
           received:      Number(inv.received) || 0,
         };
+        // Sync discount signals so computed() reflects loaded values
+        this._discountMode.set('flat');
+        this._discountValue.set(Number(inv.discount) || 0);
 
         // Map ApiInvoiceItem → InvoiceLineItem
         const lineItems: InvoiceLineItem[] = (inv.items ?? []).map(item => {
-          const price    = Number(item.price)    || 0;
-          const qty      = item.qty              || 1;
-          const discPct  = Number(item.discount) || 0;
-          const gstRate  = Number(item.gstRate)  || 0;
-          const subtotal       = +(price * qty).toFixed(2);
-          const discountAmount = +((subtotal * discPct) / 100).toFixed(2);
-          const taxable        = subtotal - discountAmount;
-          const taxAmount      = +((taxable * gstRate) / 100).toFixed(2);
-          const total          = +(taxable + taxAmount).toFixed(2);
+          const price   = Number(item.price) || 0;
+          const qty     = item.qty           || 1;
+          const gstRate = Number(item.gstRate) || 0;
 
           return {
             id:              String(item.id),
@@ -201,12 +212,12 @@ export class InvoiceFormComponent implements OnInit {
             unit:            '',
             quantity:        qty,
             unitPrice:       price,
-            discountPercent: discPct,
-            discountAmount,
+            discountPercent: 0,   // per-item discount removed — always 0
+            discountAmount:  0,
             taxRate:         gstRate,
-            taxAmount,
-            subtotal,
-            total,
+            taxAmount:       +((price * qty * gstRate) / 100).toFixed(2),
+            subtotal:        +(price * qty).toFixed(2),
+            total:           +(price * qty + (price * qty * gstRate) / 100).toFixed(2),
           };
         });
 
@@ -343,15 +354,16 @@ export class InvoiceFormComponent implements OnInit {
     });
   }
 
-  onDiscountChange(index: number, event: Event): void {
-    const val = Math.min(100, Math.max(0, +(event.target as HTMLInputElement).value));
-    if (isNaN(val)) return;
-    this.lineItems.update(items => {
-      const updated = [...items];
-      updated[index] = this._recalcItem({ ...updated[index], discountPercent: val });
-      return updated;
-    });
-  }
+  // onDiscountChange — commented out for now (per-item Disc% field removed)
+  // onDiscountChange(index: number, event: Event): void {
+  //   const val = Math.min(100, Math.max(0, +(event.target as HTMLInputElement).value));
+  //   if (isNaN(val)) return;
+  //   this.lineItems.update(items => {
+  //     const updated = [...items];
+  //     updated[index] = this._recalcItem({ ...updated[index], discountPercent: val });
+  //     return updated;
+  //   });
+  // }
 
   removeLineItem(index: number): void {
     this.lineItems.update(items => items.filter((_, i) => i !== index));
@@ -392,9 +404,9 @@ export class InvoiceFormComponent implements OnInit {
     return null;
   }
 
-  saveDraft(): void {
-    this._save();
-  }
+  // saveDraft(): void {
+  //   this._save();
+  // }
   saveAndSend(): void {
     this._save();
   }
