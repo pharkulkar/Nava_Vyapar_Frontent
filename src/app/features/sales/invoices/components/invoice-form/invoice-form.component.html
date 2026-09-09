@@ -15,7 +15,7 @@
       <button mat-flat-button color="primary" (click)="saveAndSend()" [disabled]="saving()">
         <mat-spinner diameter="18" *ngIf="saving()"></mat-spinner>
         <mat-icon *ngIf="!saving()">send</mat-icon>
-        {{ saving() ? 'Saving...' : 'Save & Send' }}
+        {{ saving() ? 'Saving...' : 'Save' }}
       </button>
     </div>
   </div>
