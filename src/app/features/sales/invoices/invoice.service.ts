@@ -106,6 +106,22 @@ export class InvoiceService {
     return this.http.put<ApiResponse<Invoice>>(`${this.BASE}/${payload.id}`, payload);
   }
 
+  /** PUT /api/invoices/:id?businessId= — same body as create */
+  putInvoice(invoiceId: number, payload: ApiCreateInvoiceRequest): Observable<CreateInvoiceApiResponse> {
+    let p = new HttpParams();
+    if (this.businessId !== null) p = p.set('businessId', this.businessId);
+    return this.http.put<CreateInvoiceApiResponse>(
+      `${this.BASE}/${invoiceId}`,
+      payload,
+      { params: p },
+    ).pipe(
+      catchError(err => {
+        if (err?.error?.status === 'success') return of(err.error as CreateInvoiceApiResponse);
+        return throwError(() => err);
+      }),
+    );
+  }
+
   /** PATCH /api/invoices/:id?businessId= */
   patchInvoiceReceived(invoiceId: number, received: number): Observable<PatchReceivedResponse> {
     let p = new HttpParams();

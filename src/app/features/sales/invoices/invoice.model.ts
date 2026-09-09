@@ -116,6 +116,7 @@ export interface ApiCreateInvoiceItem {
   price: number;
   discount: number;   // per-item discount %
   gstRate: number;
+  total: number;
 }
 
 export interface ApiCreateInvoiceRequest {

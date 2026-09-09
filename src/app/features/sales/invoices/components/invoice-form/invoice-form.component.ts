@@ -1,6 +1,6 @@
 import type { OnInit } from '@angular/core';
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
-import { NgFor, NgIf, CurrencyPipe } from '@angular/common';
+import { NgFor, NgIf, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -37,8 +37,9 @@ interface InvoiceForm {
   dueDate: string;
   notes: string;
   termsAndConditions: string;
-  globalDiscount: number;   // invoice-level discount (flat ₹ amount)
-  received: number;         // amount received upfront
+  discountMode: 'percent' | 'flat'; // % or ₹
+  discountValue: number;            // the entered value
+  received: number;                 // always set to grandTotal on save
 }
 
 @Component({
@@ -50,6 +51,7 @@ interface InvoiceForm {
     NgIf,
     FormsModule,
     CurrencyPipe,
+    DecimalPipe,
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
@@ -95,18 +97,38 @@ export class InvoiceFormComponent implements OnInit {
     dueDate: this._addDays(30),
     notes: 'Thank you for your business!',
     termsAndConditions: 'Payment due within 30 days.',
-    globalDiscount: 0,
-    received: 0,
+    discountMode:  'flat',
+    discountValue: 0,
+    received:      0,
   };
 
   protected readonly totals = computed(() => {
     const items = this.lineItems();
-    const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-    const totalDiscount = items.reduce((s, i) => s + i.discountAmount, 0);
-    const taxableAmount = subtotal - totalDiscount;
-    const totalTax = items.reduce((s, i) => s + i.taxAmount, 0);
-    const grandTotal = taxableAmount + totalTax;
-    return { subtotal, totalDiscount, taxableAmount, totalTax, grandTotal };
+    const lineSubtotal    = items.reduce((s, i) => s + i.subtotal, 0);
+    const lineDiscount    = items.reduce((s, i) => s + i.discountAmount, 0);
+    const taxableAmount   = lineSubtotal - lineDiscount;
+    const totalTax        = items.reduce((s, i) => s + i.taxAmount, 0);
+    const beforeInvDisc   = taxableAmount + totalTax;
+
+    // Invoice-level discount
+    const mode  = this.form.discountMode;
+    const val   = this.form.discountValue || 0;
+    const invDiscount = mode === 'percent'
+      ? +((beforeInvDisc * val) / 100).toFixed(2)
+      : +Math.min(val, beforeInvDisc).toFixed(2);
+
+    const grandTotal = +(beforeInvDisc - invDiscount).toFixed(2);
+
+    return {
+      subtotal:       lineSubtotal,
+      lineDiscount,
+      taxableAmount,
+      totalTax,
+      invDiscount,
+      grandTotal,
+      // flat ₹ discount sent to API
+      discountForApi: invDiscount,
+    };
   });
 
   protected readonly taxBreakdown = computed(() => {
@@ -154,8 +176,9 @@ export class InvoiceFormComponent implements OnInit {
           dueDate:         this._today(),
           notes:           '',
           termsAndConditions: '',
-          globalDiscount:  Number(inv.discount) || 0,
-          received:        Number(inv.received) || 0,
+          discountMode:  'flat',
+          discountValue: Number(inv.discount) || 0,
+          received:      Number(inv.received) || 0,
         };
 
         // Map ApiInvoiceItem → InvoiceLineItem
@@ -390,8 +413,8 @@ export class InvoiceFormComponent implements OnInit {
       customerName:    this.form.customerName,
       customerMobile:  this.form.customerPhone,
       customerAddress: this.form.customerAddress,
-      discount:        this.form.globalDiscount,
-      received:        this.totals().grandTotal,
+      discount:        this.totals().discountForApi,
+      received:        Math.round(this.totals().grandTotal),   // customer paid full amount after discount
       items: this.lineItems().map(li => ({
         productId:   Number(li.productId),
         productName: li.productName,
@@ -399,14 +422,12 @@ export class InvoiceFormComponent implements OnInit {
         price:       li.unitPrice,
         discount:    li.discountPercent,
         gstRate:     li.taxRate,
+        total:       Math.round(li.total)
       })),
     };
 
     if (this.isEdit) {
-      this.invoiceService.patchInvoiceReceived(
-        Number(this.editId),
-        this.totals().grandTotal,
-      ).subscribe({
+      this.invoiceService.putInvoice(Number(this.editId), payload).subscribe({
         next: (res: any) => {
           this.toast.success(res.displayMessage ?? res.statusMessage ?? 'Invoice updated successfully');
           this.saving.set(false);

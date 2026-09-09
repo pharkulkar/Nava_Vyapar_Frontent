@@ -469,3 +469,41 @@
     height: 16px;
   }
 }
+
+/* ── Invoice-level discount widget ── */
+.discount-row {
+  @apply flex flex-col gap-2 mb-3;
+}
+
+.discount-inputs {
+  @apply flex items-center gap-2;
+}
+
+.mode-toggle {
+  @apply flex rounded-lg border border-gray-200 dark:border-white/15 overflow-hidden shrink-0;
+}
+
+.mode-btn {
+  @apply w-9 h-9 text-sm font-semibold
+         text-gray-500 dark:text-white/50
+         bg-white dark:bg-white/5
+         hover:bg-gray-50 dark:hover:bg-white/10
+         transition-colors cursor-pointer border-none;
+
+  &.active {
+    @apply bg-primary-600 text-white;
+  }
+}
+
+.disc-input-wrap {
+  @apply flex-1;
+}
+
+.discount-preview {
+  @apply text-xs text-green-600 dark:text-green-400 font-medium;
+}
+
+/* Invoice discount line in totals */
+.inv-discount {
+  .disc-saving { @apply text-green-600 dark:text-green-400 font-semibold; }
+}

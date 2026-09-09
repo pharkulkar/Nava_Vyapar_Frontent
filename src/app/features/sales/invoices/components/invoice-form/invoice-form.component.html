@@ -289,9 +289,9 @@
           <span>Subtotal</span>
           <span>{{ totals().subtotal | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
         </div>
-        <div class="totals-row discount" *ngIf="totals().totalDiscount > 0">
-          <span>Discount</span>
-          <span>- {{ totals().totalDiscount | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
+        <div class="totals-row discount" *ngIf="totals().lineDiscount > 0">
+          <span>Item Discounts</span>
+          <span>- {{ totals().lineDiscount | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
         </div>
         <div class="totals-row">
           <span>Taxable Amount</span>
@@ -307,6 +307,11 @@
         </div>
 
         <mat-divider class="totals-divider" />
+
+        <div class="totals-row inv-discount" *ngIf="totals().invDiscount > 0">
+          <span>Invoice Discount</span>
+          <span class="disc-saving">- {{ totals().invDiscount | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
+        </div>
 
         <div class="totals-row grand-total">
           <span>Grand Total</span>
@@ -324,12 +329,36 @@
       <!-- Quick Actions -->
       <div class="quick-actions-card">
         <h2 class="section-title"><mat-icon>bolt</mat-icon> Quick Actions</h2>
-        <button mat-stroked-button class="w-full mb-2" (click)="applyGlobalDiscount()">
-          <mat-icon>local_offer</mat-icon> Apply Global Discount
-        </button>
+
+        <!-- Invoice-level discount -->
+        <div class="discount-row">
+          <label class="field-label">Invoice Discount</label>
+          <div class="discount-inputs">
+            <!-- Mode toggle -->
+            <div class="mode-toggle">
+              <button type="button"
+                class="mode-btn" [class.active]="form.discountMode === 'flat'"
+                (click)="form.discountMode = 'flat'">₹</button>
+              <button type="button"
+                class="mode-btn" [class.active]="form.discountMode === 'percent'"
+                (click)="form.discountMode = 'percent'">%</button>
+            </div>
+            <div class="field-control disc-input-wrap">
+              <mat-icon class="field-icon">local_offer</mat-icon>
+              <input class="field-input" type="number" min="0"
+                     [(ngModel)]="form.discountValue"
+                     [placeholder]="form.discountMode === 'percent' ? '0 %' : '0.00 ₹'" />
+            </div>
+          </div>
+          <p class="discount-preview" *ngIf="totals().invDiscount > 0">
+            Saving ₹{{ totals().invDiscount | number:'1.2-2' }}
+            · Grand Total: ₹{{ totals().grandTotal | number:'1.2-2' }}
+          </p>
+        </div>
+
         <button
           mat-stroked-button
-          class="w-full"
+          class="w-full mt-2"
           (click)="clearAllItems()"
           [disabled]="lineItems().length === 0"
           color="warn"
