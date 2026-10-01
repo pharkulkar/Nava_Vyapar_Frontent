@@ -254,6 +254,18 @@ import type { ApiProduct } from './product.model';
           </td>
         </ng-container>
 
+        <!-- Current Stock -->
+        <ng-container matColumnDef="currentStock">
+          <th mat-header-cell *matHeaderCellDef>Stock</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="stock-chip"
+                  [class.out]="(row.currentStock ?? 0) <= 0"
+                  [class.low]="(row.currentStock ?? 0) > 0 && (row.currentStock ?? 0) <= 10">
+              {{ row.currentStock ?? 0 }}
+            </span>
+          </td>
+        </ng-container>
+
         <!-- Actions -->
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
@@ -311,7 +323,7 @@ export class ProductsComponent implements OnInit {
     string,
     { label: string; color: string; icon: string }
   >;
-  protected readonly displayedColumns = ['select', 'name', 'category', 'price', 'uom', 'gstRate', 'actions'];
+  protected readonly displayedColumns = ['select', 'name', 'category', 'price', 'uom', 'gstRate', 'currentStock', 'actions'];
   protected readonly categories = PRODUCT_CATEGORIES;
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -590,7 +602,7 @@ export class ProductsComponent implements OnInit {
 
   exportCsv(): void {
     const rows = [
-      ['Name', 'Product Code', 'Category', 'Price', 'UOM', 'GST Rate', 'Purchase Price', 'Description'],
+      ['Name', 'Product Code', 'Category', 'Price', 'UOM', 'GST Rate', 'Current Stock', 'Purchase Price', 'Description'],
       ...this.filteredProducts().map(p => [
         p.name,
         p.productCode,
@@ -598,6 +610,7 @@ export class ProductsComponent implements OnInit {
         p.price,
         p.uom,
         p.gstRate,
+        p.currentStock ?? 0,
         p.purchasePrice ?? '',
         p.description ?? '',
       ]),

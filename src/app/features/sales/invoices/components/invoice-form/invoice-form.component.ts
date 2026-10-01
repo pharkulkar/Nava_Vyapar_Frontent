@@ -388,6 +388,16 @@ export class InvoiceFormComponent implements OnInit {
     );
   }
 
+  /**
+   * Resolve a product's code/SKU from the loaded cache using its numeric id.
+   * Used on edit, where line items from the detail API carry only the numeric id.
+   * Falls back to the raw value if no match is found.
+   */
+  private _resolveProductCode(productId: string): string {
+    const match = this._allProducts.find(p => p.id === String(productId));
+    return match?.sku ?? productId;
+  }
+
   private _recalcItem(item: InvoiceLineItem): InvoiceLineItem {
     const subtotal = +(item.quantity * item.unitPrice).toFixed(2);
     const discountAmount = +((subtotal * item.discountPercent) / 100).toFixed(2);
@@ -428,7 +438,9 @@ export class InvoiceFormComponent implements OnInit {
       discount:        this.totals().discountForApi,
       received:        Math.round(this.totals().grandTotal),   // customer paid full amount after discount
       items: this.lineItems().map(li => ({
-        productId:   Number(li.productId),
+        // Send productCode / SKU as productId. On edit, line items loaded from the
+        // detail API have no sku, so resolve it from the product cache by numeric id.
+        productId:   li.sku || this._resolveProductCode(li.productId),
         productName: li.productName,
         qty:         li.quantity,
         price:       li.unitPrice,
