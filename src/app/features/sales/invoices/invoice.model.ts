@@ -111,6 +111,7 @@ export interface UpdateInvoiceRequest extends Partial<CreateInvoiceRequest> {
 // ── Real API create/update request shape ─────────────────────────────────────
 export interface ApiCreateInvoiceItem {
   productId: string;  // product code / SKU (e.g. "P001")
+  productCode: string;
   productName: string;
   qty: number;
   price: number;

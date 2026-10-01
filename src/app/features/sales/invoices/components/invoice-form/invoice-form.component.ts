@@ -440,7 +440,8 @@ export class InvoiceFormComponent implements OnInit {
       items: this.lineItems().map(li => ({
         // Send productCode / SKU as productId. On edit, line items loaded from the
         // detail API have no sku, so resolve it from the product cache by numeric id.
-        productId:   li.sku || this._resolveProductCode(li.productId),
+        productId:   li.productId,
+        productCode:   li.sku || this._resolveProductCode(li.productId),
         productName: li.productName,
         qty:         li.quantity,
         price:       li.unitPrice,
