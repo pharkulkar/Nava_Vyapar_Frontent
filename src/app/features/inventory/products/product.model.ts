@@ -9,6 +9,8 @@ export interface ApiProductRequest {
   price: number;        // maps to sellingPrice
   uom: string;          // unit of measure, maps to unit
   gstRate: number;      // maps to taxRate
+  purchasePrice?: number;
+  description?:string;
 }
 
 // Shape returned by GET /api/products
@@ -20,6 +22,8 @@ export interface ApiProduct {
   price: string;        // comes as string from API
   uom: string;
   gstRate: string;      // comes as string from API
+  purchasePrice?:number;
+  description?:string;
 }
 
 export interface ApiProductsResponse {
@@ -37,11 +41,29 @@ export interface ApiProductUpdateRequest {
   price?: number;
   uom?: string;
   gstRate?: number;
+  purchasePrice?: number;
+  description?:string;
 }
 
 // Shape expected by DELETE /api/products/?businessId= (array body)
 export interface ApiProductDeleteRequest {
   id: number;
+}
+
+// Shape expected by POST /api/inventory (array body)
+export interface ApiInventoryRequest {
+  productId: string;          // maps to productCode / SKU
+  businessId: number;
+  quantity: number;
+  lowStockThreshold: number;
+  uom: string;
+  note?: string;
+}
+
+export interface ApiInventoryResponse {
+  status: string;
+  statusMessage?: string;
+  displayMessage?: string;
 }
 
 export interface Product {

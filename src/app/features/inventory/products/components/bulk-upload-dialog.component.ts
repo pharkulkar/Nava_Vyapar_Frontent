@@ -247,7 +247,7 @@ export class BulkUploadDialogComponent {
   protected readonly result = signal<BulkUploadResult | null>(null);
 
   protected readonly requiredColumns = ['productCode', 'name', 'price'];
-  protected readonly optionalColumns = ['category', 'uom', 'gstRate'];
+  protected readonly optionalColumns = ['category', 'uom', 'gstRate', 'purchasePrice', 'description'];
 
   onDragOver(e: DragEvent): void {
     e.preventDefault();

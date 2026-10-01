@@ -8,12 +8,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
+import { forkJoin, of, catchError, concatMap, map } from 'rxjs';
+import { AppStore } from '@core/store/app.store';
 import { ProductService } from '../product.service';
 import { ToastService } from '@core/services/toast.service';
 import {
   PRODUCT_UNITS, PRODUCT_CATEGORIES, TAX_RATES,
 } from '../product.model';
-import type { Product, CreateProductRequest, ApiProductRequest, ApiProduct, ApiProductUpdateRequest } from '../product.model';
+import type {
+  Product, ApiProductRequest, ApiProduct, ApiProductUpdateRequest,
+  ApiInventoryRequest, ApiInventoryResponse,
+} from '../product.model';
 
 export interface ProductDialogData {
   product?: ApiProduct;
@@ -143,7 +148,7 @@ export interface ProductDialogData {
           </div>
 
           <!-- Purchase Price — commented out for now -->
-          <!--
+          
           <div class="field">
             <label class="field-label" for="pd-purchase">Purchase Price (₹) <span class="optional">(opt)</span></label>
             <div class="field-control">
@@ -152,7 +157,7 @@ export interface ProductDialogData {
                      min="0" placeholder="0.00" />
             </div>
           </div>
-          -->
+          
 
           <!-- Tax Rate (GST) -->
           <div class="field">
@@ -178,45 +183,41 @@ export interface ProductDialogData {
         </div>
         -->
 
-        <!-- Section: Stock & Status — commented out for now -->
-        <!--
-        <mat-divider />
+        <!-- Section: Stock — updates inventory via POST /inventory (add & edit) -->
+        <ng-container>
+          <mat-divider />
 
-        <p class="pd-section-label"><mat-icon>warehouse</mat-icon> Stock & Status</p>
+          <p class="pd-section-label"><mat-icon>warehouse</mat-icon> Stock</p>
 
-        <div class="pd-grid-3">
-          <div class="field">
-            <label class="field-label" for="pd-stock">Opening Stock</label>
-            <div class="field-control">
-              <mat-icon class="field-icon">inventory</mat-icon>
-              <input id="pd-stock" class="field-input" type="number" formControlName="stockQuantity"
-                     min="0" placeholder="0" />
+          <div class="pd-grid-3">
+            <div class="field">
+              <label class="field-label" for="pd-stock">Quantity</label>
+              <div class="field-control">
+                <mat-icon class="field-icon">inventory</mat-icon>
+                <input id="pd-stock" class="field-input" type="number" formControlName="stockQuantity"
+                       min="0" placeholder="0" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="pd-threshold">Low Stock Quantity</label>
+              <div class="field-control">
+                <mat-icon class="field-icon">warning_amber</mat-icon>
+                <input id="pd-threshold" class="field-input" type="number" formControlName="lowStockThreshold"
+                       min="0" placeholder="10" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="pd-note">Note <span class="optional">(optional)</span></label>
+              <div class="field-control">
+                <mat-icon class="field-icon">sticky_note_2</mat-icon>
+                <input id="pd-note" class="field-input" type="text" formControlName="note"
+                       placeholder="e.g. Restocked" autocomplete="off" />
+              </div>
             </div>
           </div>
-
-          <div class="field">
-            <label class="field-label" for="pd-threshold">Low Stock Alert</label>
-            <div class="field-control">
-              <mat-icon class="field-icon">warning_amber</mat-icon>
-              <input id="pd-threshold" class="field-input" type="number" formControlName="lowStockThreshold"
-                     min="0" placeholder="10" />
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="pd-status">Status</label>
-            <div class="field-control">
-              <mat-icon class="field-icon">toggle_on</mat-icon>
-              <select id="pd-status" class="field-select" formControlName="status">
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="draft">Draft</option>
-              </select>
-              <mat-icon class="select-caret">expand_more</mat-icon>
-            </div>
-          </div>
-        </div>
-        -->
+        </ng-container>
 
       </form>
 
@@ -387,6 +388,7 @@ export class ProductDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly productService = inject(ProductService);
   private readonly toast = inject(ToastService);
+  private readonly store = inject(AppStore);
   private readonly dialogRef = inject(MatDialogRef<ProductDialogComponent>);
 
   @Inject(MAT_DIALOG_DATA) readonly data: ProductDialogData =
@@ -407,21 +409,20 @@ export class ProductDialogComponent implements OnInit {
     category:          ['', Validators.required],
     unit:              ['pcs' as Product['unit'], Validators.required],
     description:       [''],
-    // purchasePrice — commented out for now
-    // purchasePrice:     [0, [Validators.required, Validators.min(0)]],
+    purchasePrice:     [0, [Validators.required, Validators.min(0)]],
     sellingPrice:      [0, [Validators.required, Validators.min(0)]],
     taxRate:           [18, Validators.required],
-    // Stock & Status — commented out for now
-    // stockQuantity:     [0, Validators.min(0)],
-    // lowStockThreshold: [10, Validators.min(0)],
-    // status:            ['active' as Product['status'], Validators.required],
+    // Inventory fields — sent to POST /inventory on edit
+    stockQuantity:     [0, Validators.min(0)],
+    lowStockThreshold: [10, Validators.min(0)],
+    note:              [''],
   });
 
   get f() { return this.form.controls; }
 
   ngOnInit(): void {
     if (this.data?.product) {
-      const p = this.data.product as unknown as import('../product.model').ApiProduct;
+      const p: ApiProduct = this.data.product;
       this.form.patchValue({
         name:          p.name,
         sku:           p.productCode,
@@ -429,12 +430,12 @@ export class ProductDialogComponent implements OnInit {
         unit:          (p.uom as Product['unit']) ?? 'pcs',
         sellingPrice:  Number(p.price),
         taxRate:       Number(p.gstRate),
-        // purchasePrice, stockQuantity, lowStockThreshold, status — commented out for now
+        purchasePrice: p.purchasePrice ?? 0,
+        description:   p.description ?? '',
+        // stockQuantity / lowStockThreshold start at defaults — the GET /products
+        // list response doesn't include current stock levels
       });
     }
-    // margin calc commented out — no purchasePrice field for now
-    // this.form.valueChanges.subscribe(() => this._calcMargin());
-    // this._calcMargin();
   }
 
   // private _calcMargin(): void {
@@ -460,11 +461,35 @@ export class ProductDialogComponent implements OnInit {
         price:    raw.sellingPrice,
         uom:      raw.unit,
         gstRate:  raw.taxRate,
+        purchasePrice: raw.purchasePrice,
+        description: raw.description,
       };
 
-      this.productService.updateProducts([updatePayload]).subscribe({
-        next: res => {
-          this.toast.success(res.displayMessage ?? res.statusMessage ?? 'Product updated successfully');
+      // Inventory update — uses the SKU/productCode as productId, per the API contract
+      const inventoryPayload: ApiInventoryRequest = {
+        productId:         raw.sku,
+        businessId:        this.store.selectedBusiness()?.id ?? 0,
+        quantity:          raw.stockQuantity,
+        lowStockThreshold: raw.lowStockThreshold,
+        uom:               raw.unit,
+        note:              raw.note || undefined,
+      };
+
+      // Fire product update and inventory update together. Inventory errors are
+      // tolerated (swallowed to null) so a stock hiccup doesn't block a valid
+      // product edit — but a genuine product-update failure still surfaces.
+      forkJoin({
+        product: this.productService.updateProducts([updatePayload]),
+        inventory: this.productService.updateInventory([inventoryPayload]).pipe(
+          catchError(() => of(null)),
+        ),
+      }).subscribe({
+        next: ({ product, inventory }) => {
+          if (inventory === null) {
+            this.toast.error('Product saved, but stock update failed. Please retry stock update.');
+          } else {
+            this.toast.success(product.displayMessage ?? product.statusMessage ?? 'Product updated successfully');
+          }
           this.dialogRef.close(true);
         },
         error: err => {
@@ -486,18 +511,52 @@ export class ProductDialogComponent implements OnInit {
         price:       raw.sellingPrice,
         uom:         raw.unit,
         gstRate:     raw.taxRate,
+        purchasePrice: raw.purchasePrice,
+        description: raw.description,
       };
 
-      this.productService.addProducts([apiPayload]).subscribe({
-        next: res => {
-          this.toast.success(res.displayMessage ?? res.statusMessage ?? 'Product added successfully');
+      const inventoryPayload: ApiInventoryRequest = {
+        productId:         raw.sku,
+        businessId:        this.store.selectedBusiness()?.id ?? 0,
+        quantity:          raw.stockQuantity,
+        lowStockThreshold: raw.lowStockThreshold,
+        uom:               raw.unit,
+        note:              raw.note || undefined,
+      };
+
+      // Create the product first, then attach inventory once it exists.
+      // Inventory errors are tolerated so a stock hiccup doesn't discard a
+      // successfully created product.
+      this.productService.addProducts([apiPayload]).pipe(
+        concatMap(res =>
+          this.productService.updateInventory([inventoryPayload]).pipe(
+            map(inv => ({ product: res, inventory: inv as ApiInventoryResponse | null })),
+            catchError(() => of({ product: res, inventory: null as ApiInventoryResponse | null })),
+          ),
+        ),
+      ).subscribe({
+        next: ({ product, inventory }) => {
+          if (inventory === null) {
+            this.toast.error('Product created, but stock update failed. Please set stock from Edit.');
+          } else {
+            this.toast.success(product.displayMessage ?? product.statusMessage ?? 'Product added successfully');
+          }
           this.dialogRef.close(true);
         },
         error: err => {
           const body = err?.error;
           if (body?.status === 'success') {
-            this.toast.success(body.displayMessage ?? 'Product added successfully');
-            this.dialogRef.close(true);
+            // Product create returned success via error channel — still try inventory
+            this.productService.updateInventory([inventoryPayload]).pipe(
+              catchError(() => of(null)),
+            ).subscribe(inv => {
+              if (inv === null) {
+                this.toast.error('Product created, but stock update failed. Please set stock from Edit.');
+              } else {
+                this.toast.success(body.displayMessage ?? 'Product added successfully');
+              }
+              this.dialogRef.close(true);
+            });
             return;
           }
           this.toast.error(body?.displayMessage ?? body?.message ?? 'Failed to add product.');

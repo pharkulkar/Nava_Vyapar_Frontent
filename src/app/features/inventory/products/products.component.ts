@@ -590,7 +590,7 @@ export class ProductsComponent implements OnInit {
 
   exportCsv(): void {
     const rows = [
-      ['Name', 'Product Code', 'Category', 'Price', 'UOM', 'GST Rate'],
+      ['Name', 'Product Code', 'Category', 'Price', 'UOM', 'GST Rate', 'Purchase Price', 'Description'],
       ...this.filteredProducts().map(p => [
         p.name,
         p.productCode,
@@ -598,9 +598,13 @@ export class ProductsComponent implements OnInit {
         p.price,
         p.uom,
         p.gstRate,
+        p.purchasePrice ?? '',
+        p.description ?? '',
       ]),
     ];
-    const csv = rows.map(r => r.join(',')).join('\n');
+    // Escape each cell for CSV: wrap in quotes, double any inner quotes.
+    const escape = (v: unknown): string => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = rows.map(r => r.map(escape).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

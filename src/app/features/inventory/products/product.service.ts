@@ -8,6 +8,7 @@ import type { ApiResponse, PaginatedResponse, PaginationParams } from '@shared/m
 import type {
   ProductFilters, BulkUploadResult, ApiProductRequest, ApiProductsResponse, ApiProduct,
   ApiProductUpdateRequest, ApiProductDeleteRequest,
+  ApiInventoryRequest, ApiInventoryResponse,
 } from './product.model';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +16,7 @@ export class ProductService {
   private readonly http = inject(HttpClient);
   private readonly store = inject(AppStore);
   private readonly BASE = `${environment.apiBaseUrl}/products`;
+  private readonly INVENTORY_BASE = `${environment.apiBaseUrl}/inventory`;
 
   private get businessId(): number | null {
     return this.store.selectedBusiness()?.id ?? null;
@@ -63,6 +65,16 @@ export class ProductService {
     return this.http.put<ApiProductsResponse>(this.BASE + '/', products, { params: p }).pipe(
       catchError(err => {
         if (err?.error?.status === 'success') return of(err.error as ApiProductsResponse);
+        return throwError(() => err);
+      }),
+    );
+  }
+
+  /** POST /api/inventory — set/update stock for one or many products (array body) */
+  updateInventory(items: ApiInventoryRequest[]): Observable<ApiInventoryResponse> {
+    return this.http.post<ApiInventoryResponse>(this.INVENTORY_BASE, items).pipe(
+      catchError(err => {
+        if (err?.error?.status === 'success') return of(err.error as ApiInventoryResponse);
         return throwError(() => err);
       }),
     );
@@ -159,10 +171,16 @@ export class ProductService {
             const productCode = norm['productcode'] ?? norm['sku'] ?? norm['code'] ?? '';
             const price = Number(norm['price'] ?? norm['sellingprice'] ?? 0);
             const gstRate = Number(norm['gstrate'] ?? norm['taxrate'] ?? 18);
+            const purchasePriceRaw = norm['purchaseprice'] ?? norm['purchase_price'] ?? '';
+            const purchasePrice = purchasePriceRaw === '' ? undefined : Number(purchasePriceRaw);
+            const description = norm['description'] ?? norm['desc'] ?? '';
 
             if (!name) { errors.push({ row, field: 'name', message: 'Name is required' }); return; }
             if (!productCode) { errors.push({ row, field: 'productCode', message: 'Product code / SKU is required' }); return; }
             if (isNaN(price) || price < 0) { errors.push({ row, field: 'price', message: 'Invalid price' }); return; }
+            if (purchasePrice !== undefined && (isNaN(purchasePrice) || purchasePrice < 0)) {
+              errors.push({ row, field: 'purchasePrice', message: 'Invalid purchase price' }); return;
+            }
 
             rows.push({
               productCode,
@@ -171,6 +189,8 @@ export class ProductService {
               price,
               uom: norm['uom'] ?? norm['unit'] ?? 'pcs',
               gstRate: isNaN(gstRate) ? 18 : gstRate,
+              ...(purchasePrice !== undefined ? { purchasePrice } : {}),
+              ...(description ? { description } : {}),
             });
           });
         } catch {
@@ -186,8 +206,8 @@ export class ProductService {
   }
 
   downloadTemplate(): void {
-    const headers = ['productCode', 'name', 'category', 'price', 'uom', 'gstRate'];
-    const sample  = ['P001', 'Basmati Rice', 'Grocery', '120', 'kg', '5'];
+    const headers = ['productCode', 'name', 'category', 'price', 'uom', 'gstRate', 'purchasePrice', 'description'];
+    const sample  = ['P001', 'Basmati Rice', 'Grocery', '120', 'kg', '5', '100', 'Premium long-grain rice'];
     const csv = [headers.join(','), sample.join(',')].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

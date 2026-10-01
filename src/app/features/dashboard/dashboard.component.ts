@@ -26,14 +26,14 @@ interface DashboardStat {
       subtitle="Welcome back, {{ store.currentUser()?.name ?? 'User' }}"
       icon="dashboard"
     >
-      <div actions class="flex gap-2">
+      <!--<div actions class="flex gap-2">
         <button mat-stroked-button>
           <mat-icon>download</mat-icon> Export
         </button>
         <button mat-flat-button color="primary">
           <mat-icon>add</mat-icon> New Invoice
         </button>
-      </div>
+      </div>-->
     </nv-page-header>
 
     <!-- KPI Stats -->
