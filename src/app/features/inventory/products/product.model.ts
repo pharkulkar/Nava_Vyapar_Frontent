@@ -24,6 +24,7 @@ export interface ApiProduct {
   gstRate: string;      // comes as string from API
   purchasePrice?:number;
   description?:string;
+  currentStock?:number;
 }
 
 export interface ApiProductsResponse {

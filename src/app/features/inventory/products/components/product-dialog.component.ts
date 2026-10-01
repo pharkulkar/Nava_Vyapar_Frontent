@@ -432,6 +432,7 @@ export class ProductDialogComponent implements OnInit {
         taxRate:       Number(p.gstRate),
         purchasePrice: p.purchasePrice ?? 0,
         description:   p.description ?? '',
+        stockQuantity: Number(p.currentStock) ?? ''
         // stockQuantity / lowStockThreshold start at defaults — the GET /products
         // list response doesn't include current stock levels
       });
