@@ -83,7 +83,7 @@ import type { ApiProduct } from './product.model';
         </div>
       </div>
 
-      <div class="summary-card accent-red">
+      <!--<div class="summary-card accent-red">
         <div class="summary-icon bg-gradient-to-br from-red-500 to-rose-600">
           <mat-icon>remove_circle</mat-icon>
         </div>
@@ -91,7 +91,7 @@ import type { ApiProduct } from './product.model';
           <p class="summary-value">{{ stats().outOfStock }}</p>
           <p class="summary-label">Out of Stock</p>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Filters Bar -->
@@ -332,7 +332,8 @@ export class ProductsComponent implements OnInit {
   protected readonly allProducts = signal<ApiProduct[]>([]);
   protected readonly currentPage = signal(1);
   protected readonly selectedIds = signal<Set<number>>(new Set());
-  protected readonly stats = signal({ total: 0, active: 0, lowStock: 0, outOfStock: 0 });
+  /** Threshold used to flag a product as "low stock" (API gives no per-product value) */
+  protected readonly LOW_STOCK_THRESHOLD = 10;
 
   // Filter state as signals so computed() tracks them reactively
   protected readonly searchQuerySignal = signal('');
@@ -340,7 +341,10 @@ export class ProductsComponent implements OnInit {
   protected readonly sortBySignal = signal('');
   protected readonly sortOrderSignal = signal<'asc' | 'desc'>('asc');
 
-  protected showLowStock = false;
+  protected readonly showLowStockSignal = signal(false);
+  get showLowStock(): boolean { return this.showLowStockSignal(); }
+  set showLowStock(v: boolean) { this.showLowStockSignal.set(v); }
+
   protected readonly pageSizeSignal = signal(10);
   get pageSize(): number { return this.pageSizeSignal(); }
   set pageSize(v: number) { this.pageSizeSignal.set(v); }
@@ -376,6 +380,10 @@ export class ProductsComponent implements OnInit {
     if (cat) {
       result = result.filter(p => p.category === cat);
     }
+    if (this.showLowStockSignal()) {
+      // Show only low or out-of-stock items
+      result = result.filter(p => (p.currentStock ?? 0) <= this.LOW_STOCK_THRESHOLD);
+    }
 
     if (sortBy) {
       const key = sortBy as keyof ApiProduct;
@@ -385,6 +393,10 @@ export class ProductsComponent implements OnInit {
         const cmp = av.localeCompare(bv, undefined, { numeric: true });
         return sortOrder === 'desc' ? -cmp : cmp;
       });
+    } else {
+      // No explicit sort — keep a stable order by id so an edited product
+      // doesn't jump position when the API returns rows in a different order.
+      result = [...result].sort((a, b) => a.id - b.id);
     }
 
     return result;
@@ -399,8 +411,22 @@ export class ProductsComponent implements OnInit {
 
   protected readonly totalCount = computed(() => this.allProducts().length);
 
+  // Summary-card stats derived from the loaded products
+  protected readonly stats = computed(() => {
+    const items = this.allProducts();
+    const outOfStock = items.filter(p => (p.currentStock ?? 0) <= 0).length;
+    // Low stock includes out-of-stock — anything at or below the threshold needs attention
+    const lowStock = items.filter(p => (p.currentStock ?? 0) <= this.LOW_STOCK_THRESHOLD).length;
+    return {
+      total: items.length,
+      active: items.length,
+      lowStock,
+      outOfStock,
+    };
+  });
+
   protected readonly hasActiveFilters = computed(() =>
-    !!this.searchQuerySignal() || !!this.selectedCategorySignal() || this.showLowStock,
+    !!this.searchQuerySignal() || !!this.selectedCategorySignal() || this.showLowStockSignal(),
   );
 
   ngOnInit(): void { this.loadProducts(); }
@@ -411,12 +437,6 @@ export class ProductsComponent implements OnInit {
     this.productCache.getProducts(force).subscribe({
       next: items => {
         this.allProducts.set(items);
-        this.stats.set({
-          total: items.length,
-          active: items.length,
-          lowStock: 0,
-          outOfStock: 0,
-        });
         this.loading.set(false);
       },
       error: () => {
@@ -440,7 +460,7 @@ export class ProductsComponent implements OnInit {
   }
 
   toggleLowStock(): void {
-    this.showLowStock = !this.showLowStock;
+    this.showLowStockSignal.update(v => !v);
     this.onFilterChange();
   }
 
@@ -452,7 +472,7 @@ export class ProductsComponent implements OnInit {
   clearFilters(): void {
     this.searchQuerySignal.set('');
     this.selectedCategorySignal.set('');
-    this.showLowStock = false;
+    this.showLowStockSignal.set(false);
     this.currentPage.set(1);
   }
 

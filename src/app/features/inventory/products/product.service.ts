@@ -25,6 +25,10 @@ export class ProductService {
   getProducts(params: PaginationParams & ProductFilters): Observable<PaginatedResponse<ApiProduct>> {
     let p = new HttpParams();
     if (this.businessId !== null) p = p.set('businessId', this.businessId);
+    // Cache-buster so the browser/proxy can't serve a stale response after an update.
+    // NOTE: use only a query param here — adding a Cache-Control request header would
+    // trigger a CORS preflight that the API doesn't allow.
+    p = p.set('_t', Date.now().toString());
 
     return this.http.get<ApiProductsResponse>(this.BASE, { params: p }).pipe(
       map(res => {

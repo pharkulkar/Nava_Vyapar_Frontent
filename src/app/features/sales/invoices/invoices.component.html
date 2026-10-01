@@ -83,26 +83,32 @@
     <mat-icon class="select-caret">expand_more</mat-icon>
   </div>
 
-  <div class="field-control date-field">
+  <div class="field-control date-field" (click)="fromPicker.open()">
     <mat-icon class="field-icon">event</mat-icon>
     <input
-      class="field-input"
-      type="date"
-      [(ngModel)]="dateFrom"
-      (ngModelChange)="onFilterChange()"
+      class="field-input date-input"
+      [matDatepicker]="fromPicker"
+      [(ngModel)]="dateFromDate"
+      [max]="dateToDate"
+      placeholder="From date"
       aria-label="From Date"
+      readonly
     />
+    <mat-datepicker #fromPicker />
   </div>
 
-  <div class="field-control date-field">
+  <div class="field-control date-field" (click)="toPicker.open()">
     <mat-icon class="field-icon">event</mat-icon>
     <input
-      class="field-input"
-      type="date"
-      [(ngModel)]="dateTo"
-      (ngModelChange)="onFilterChange()"
+      class="field-input date-input"
+      [matDatepicker]="toPicker"
+      [(ngModel)]="dateToDate"
+      [min]="dateFromDate"
+      placeholder="To date"
       aria-label="To Date"
+      readonly
     />
+    <mat-datepicker #toPicker />
   </div>
 
   <button mat-stroked-button class="refresh-btn" (click)="refresh()" [disabled]="loading()" matTooltip="Refresh">

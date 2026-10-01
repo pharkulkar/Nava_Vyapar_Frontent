@@ -13,6 +13,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { InvoiceService } from './invoice.service';
 import { ToastService } from '@core/services/toast.service';
 import { PageHeaderComponent } from '@shared/components/page-header.component';
@@ -32,6 +36,7 @@ const API_STATUS_OPTIONS: { value: string; label: string }[] = [
   selector: 'nv-invoices',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [provideNativeDateAdapter()],
   imports: [
     NgFor,
     NgIf,
@@ -48,6 +53,9 @@ const API_STATUS_OPTIONS: { value: string; label: string }[] = [
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatDividerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDatepickerModule,
     PageHeaderComponent,
   ],
   templateUrl: './invoices.component.html',
@@ -107,6 +115,60 @@ export class InvoicesComponent implements OnInit {
   get dateTo(): string { return this.dateToSignal(); }
   set dateTo(v: string) { this.dateToSignal.set(v); }
 
+  // Date-object bridges for the Material datepicker (signals stay as yyyy-mm-dd strings).
+  //
+  // IMPORTANT: the getter MUST return a STABLE object reference. [(ngModel)] reads
+  // it on every change-detection pass; returning a fresh `new Date()` each time
+  // makes ngModel think the value changed forever → infinite CD loop → frozen UI.
+  // So we memoize: only build a new Date when the underlying ISO string changes.
+  private _fromDateCache: { iso: string; date: Date | null } = { iso: '', date: null };
+  private _toDateCache: { iso: string; date: Date | null } = { iso: '', date: null };
+
+  get dateFromDate(): Date | null {
+    const iso = this.dateFromSignal();
+    if (iso !== this._fromDateCache.iso) {
+      this._fromDateCache = { iso, date: this._toDate(iso) };
+    }
+    return this._fromDateCache.date;
+  }
+  set dateFromDate(d: Date | null) {
+    const iso = this._toIso(d);
+    if (iso === this.dateFromSignal()) return;   // no-op guard
+    this._fromDateCache = { iso, date: d };
+    this.dateFromSignal.set(iso);
+    this.onFilterChange();
+  }
+
+  get dateToDate(): Date | null {
+    const iso = this.dateToSignal();
+    if (iso !== this._toDateCache.iso) {
+      this._toDateCache = { iso, date: this._toDate(iso) };
+    }
+    return this._toDateCache.date;
+  }
+  set dateToDate(d: Date | null) {
+    const iso = this._toIso(d);
+    if (iso === this.dateToSignal()) return;   // no-op guard
+    this._toDateCache = { iso, date: d };
+    this.dateToSignal.set(iso);
+    this.onFilterChange();
+  }
+
+  private _toDate(iso: string): Date | null {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  private _toIso(d: Date | null): string {
+    if (!d || isNaN(d.getTime())) return '';
+    // Local date → yyyy-mm-dd (avoid UTC shift from toISOString)
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   // ── Client-side derived data ───────────────────────────────────────────────
   protected readonly filteredInvoices = computed(() => {
     const q      = this.searchQuerySignal().toLowerCase().trim();
@@ -130,12 +192,13 @@ export class InvoicesComponent implements OnInit {
       result = result.filter(inv => inv.status === status);
     }
 
-    // Date range — compare ISO date strings (yyyy-mm-dd prefix comparison works)
+    // Date range — compare on the DATE part only (inv.date may carry a time
+    // component, so take the yyyy-mm-dd prefix and compare inclusively).
     if (from) {
-      result = result.filter(inv => inv.date >= from);
+      result = result.filter(inv => (inv.date ?? '').slice(0, 10) >= from);
     }
     if (to) {
-      result = result.filter(inv => inv.date <= to);
+      result = result.filter(inv => (inv.date ?? '').slice(0, 10) <= to);
     }
 
     return result;
