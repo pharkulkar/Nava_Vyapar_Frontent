@@ -430,25 +430,42 @@ export class InvoiceFormComponent implements OnInit {
 
     this.saving.set(true);
 
+    // Build item payload first so `received` can be reconciled against the exact
+    // item totals the backend will see. Each item total is sent GST-inclusive and
+    // rounded; `received` MUST be derived from the same rounded figures and the
+    // same discount, otherwise the backend computes a residual balance and marks
+    // the invoice "partial" even though the customer paid in full.
+    const items = this.lineItems().map(li => ({
+      // Send productCode / SKU as productId. On edit, line items loaded from the
+      // detail API have no sku, so resolve it from the product cache by numeric id.
+      productId:   li.productId,
+      productCode:   li.sku || this._resolveProductCode(li.productId),
+      productName: li.productName,
+      qty:         li.quantity,
+      price:       li.unitPrice,
+      discount:    li.discountPercent,
+      gstRate:     li.taxRate,
+      // Keep 2-decimal precision (matches the rest of the totals math). Rounding
+      // to whole rupees here made the saved total drift from the displayed
+      // Grand Total and left a residual balance, flipping status to "partial".
+      total:       +li.total.toFixed(2),
+    }));
+
+    const discountForApi = this.totals().discountForApi;
+    // grandTotal the backend will arrive at: Σ(item totals) − invoice discount.
+    // Derive received from the same figures so received − (itemsTotal − discount)
+    // === 0 and the invoice is marked "paid" (not "partial").
+    const itemsTotal = +items.reduce((s, i) => s + i.total, 0).toFixed(2);
+    const payableTotal = +(itemsTotal - discountForApi).toFixed(2);
+
     const payload: ApiCreateInvoiceRequest = {
       businessId: String(this.store.selectedBusiness()?.id ?? ''),
       customerName:    this.form.customerName,
       customerMobile:  this.form.customerPhone,
       customerAddress: this.form.customerAddress,
-      discount:        this.totals().discountForApi,
-      received:        Math.round(this.totals().grandTotal),   // customer paid full amount after discount
-      items: this.lineItems().map(li => ({
-        // Send productCode / SKU as productId. On edit, line items loaded from the
-        // detail API have no sku, so resolve it from the product cache by numeric id.
-        productId:   li.productId,
-        productCode:   li.sku || this._resolveProductCode(li.productId),
-        productName: li.productName,
-        qty:         li.quantity,
-        price:       li.unitPrice,
-        discount:    li.discountPercent,
-        gstRate:     li.taxRate,
-        total:       Math.round(li.total)
-      })),
+      discount:        discountForApi,
+      received:        payableTotal,   // customer paid full amount after discount
+      items,
     };
 
     if (this.isEdit) {
