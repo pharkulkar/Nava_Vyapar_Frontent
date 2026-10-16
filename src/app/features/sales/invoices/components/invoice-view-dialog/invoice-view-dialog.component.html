@@ -22,7 +22,7 @@
   <!-- ── Amount Header ── -->
   <div class="amount-header">
     <div class="amount-label">Grand Total</div>
-    <div class="amount">₹ {{ totalPrice - discount | number:'1.2-2' }}</div>
+    <div class="amount">₹ {{ totalPrice | number:'1.2-2' }}</div>
     <div *ngIf="discount > 0" style="font-size:13px;opacity:0.85;margin-top:6px;">
       Incl. discount of ₹{{ discount | number:'1.2-2' }}
     </div>
@@ -31,12 +31,8 @@
   <!-- ── Business / Seller ── -->
   <div class="seller-section">
     <div class="seller-info">
-      <div class="seller-name">Nava Vyapar</div>
-      <div class="seller-phone">
-        <span class="ph-icon">☎</span>{{ invoice.customerMobile }}
-      </div>
+      <div class="seller-name">{{ storeName }}</div>
     </div>
-    <div class="seller-avatar">N</div>
   </div>
 
   <!-- ── Bill To / Invoice Info ── -->
@@ -87,7 +83,7 @@
   <!-- ── Calculations ── -->
   <div class="calc-row" *ngIf="discount > 0">
     <span class="calc-label">Subtotal:</span>
-    <span class="calc-value">{{ totalPrice | number:'1.2-2' }}</span>
+    <span class="calc-value">{{ subtotal | number:'1.2-2' }}</span>
   </div>
 
   <div class="calc-row" *ngIf="discount > 0" style="color:#15803d;font-weight:600">
@@ -99,7 +95,7 @@
 
   <div class="calc-row grand-row">
     <span class="calc-label">Grand Total</span>
-    <span class="calc-value">{{ totalPrice - discount | number:'1.2-2' }}</span>
+    <span class="calc-value">{{ totalPrice | number:'1.2-2' }}</span>
   </div>
 
   <div class="calc-row">

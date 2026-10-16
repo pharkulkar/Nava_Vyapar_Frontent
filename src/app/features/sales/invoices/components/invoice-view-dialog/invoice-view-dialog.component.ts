@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { InvoiceService } from '../../invoice.service';
+import { AppStore } from '@core/store/app.store';
 import type { ApiInvoice, ApiInvoiceDetail, ApiInvoiceItem } from '../../invoice.model';
 
 @Component({
@@ -20,6 +21,7 @@ export class InvoiceViewDialogComponent implements OnInit, AfterViewInit {
   private readonly data = inject<{ invoice: ApiInvoice; autoPrint?: boolean }>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject(MatDialogRef<InvoiceViewDialogComponent>);
   private readonly invoiceService = inject(InvoiceService);
+  private readonly store = inject(AppStore);
 
   protected readonly loading = signal(true);
   protected readonly detail = signal<ApiInvoiceDetail | null>(null);
@@ -28,10 +30,18 @@ export class InvoiceViewDialogComponent implements OnInit, AfterViewInit {
   protected readonly invoice = this.data.invoice;
 
   protected get items(): ApiInvoiceItem[] { return this.detail()?.items ?? []; }
+
+  /** totalPrice from the API is ALREADY the discounted grand total (post-discount). */
   protected get totalPrice(): number  { return Number((this.detail() ?? this.invoice).totalPrice) || 0; }
   protected get discount(): number    { return Number((this.detail() ?? this.invoice).discount)   || 0; }
   protected get received(): number    { return Number((this.detail() ?? this.invoice).received)   || 0; }
   protected get balance(): number     { return Number((this.detail() ?? this.invoice).balance)    || 0; }
+
+  /** Pre-discount subtotal = discounted total + discount back-added. */
+  protected get subtotal(): number { return this.totalPrice + this.discount; }
+
+  /** Store/business name for the receipt header (falls back if none selected). */
+  protected get storeName(): string { return this.store.selectedBusiness()?.name ?? 'Store'; }
 
   ngOnInit(): void {
     this.invoiceService.getInvoiceDetail(this.invoice.id).subscribe({

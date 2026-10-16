@@ -48,7 +48,7 @@ interface RevenueBar {
         <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
           <mat-icon [class.spin]="loading()">refresh</mat-icon> Refresh
         </button>
-        <button mat-flat-button color="primary" routerLink="/invoices/new">
+        <button mat-flat-button color="primary" routerLink="/sales/invoices/new">
           <mat-icon>add</mat-icon> New Invoice
         </button>
       </div>
@@ -104,7 +104,7 @@ interface RevenueBar {
         </div>
 
         <div class="recent-list" *ngIf="!loading() && recentInvoices().length > 0">
-          <a class="recent-row" *ngFor="let inv of recentInvoices()" routerLink="/invoices">
+          <a class="recent-row" *ngFor="let inv of recentInvoices()" routerLink="/sales/invoices">
             <div class="recent-avatar">{{ (inv.customerName || '?').charAt(0).toUpperCase() }}</div>
             <div class="recent-meta">
               <p class="recent-name">{{ inv.customerName || 'Unknown' }}</p>

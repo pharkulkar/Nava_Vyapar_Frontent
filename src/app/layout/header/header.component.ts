@@ -65,24 +65,42 @@ import { TauriService } from '../../core/tauri/tauri.service';
         </button>
 
         <!-- User menu -->
-        <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-trigger">
+        <button [matMenuTriggerFor]="userMenu" class="user-chip" type="button" matTooltip="Account">
           <div class="user-avatar">
             {{ userInitials() }}
+            <span class="user-status-dot"></span>
           </div>
-          <span class="user-name">{{ store.currentUser()?.name ?? 'User' }}</span>
-          <mat-icon>arrow_drop_down</mat-icon>
+          <div class="user-info">
+            <span class="user-name">{{ store.currentUser()?.name ?? 'User' }}</span>
+            <span class="user-role" *ngIf="userRole()">{{ userRole() }}</span>
+          </div>
+          <mat-icon class="user-caret">expand_more</mat-icon>
         </button>
 
-        <mat-menu #userMenu="matMenu" xPosition="before">
+        <mat-menu #userMenu="matMenu" xPosition="before" class="user-menu-panel">
+          <!-- Identity header -->
+          <div class="user-menu-header" (click)="$event.stopPropagation()">
+            <div class="user-menu-avatar">{{ userInitials() }}</div>
+            <div class="user-menu-meta">
+              <p class="user-menu-name">{{ store.currentUser()?.name ?? 'User' }}</p>
+              <p class="user-menu-role" *ngIf="userRole()">{{ userRole() }}</p>
+              <p class="user-menu-biz" *ngIf="store.selectedBusiness() as biz">
+                <mat-icon>store</mat-icon> {{ biz.name }}
+              </p>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
           <button mat-menu-item routerLink="/settings/profile">
-            <mat-icon>person</mat-icon> Profile
+            <mat-icon>person</mat-icon> <span>Profile</span>
           </button>
-          <button mat-menu-item routerLink="/settings">
-            <mat-icon>settings</mat-icon> Settings
+          <button mat-menu-item (click)="switchBusiness()">
+            <mat-icon>swap_horiz</mat-icon> <span>Switch business</span>
           </button>
           <mat-divider></mat-divider>
-          <button mat-menu-item (click)="logout()">
-            <mat-icon>logout</mat-icon> Sign out
+          <button mat-menu-item (click)="logout()" class="signout-item">
+            <mat-icon>logout</mat-icon> <span>Sign out</span>
           </button>
         </mat-menu>
       </div>
@@ -99,6 +117,13 @@ export class HeaderComponent {
   userInitials(): string {
     const name = this.store.currentUser()?.name ?? 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  userRole(): string {
+    const role = this.store.currentUser()?.role;
+    if (!role) return '';
+    // Capitalize for display (owner → Owner)
+    return role.charAt(0).toUpperCase() + role.slice(1);
   }
 
   switchBusiness(): void {

@@ -33,17 +33,77 @@
   @apply flex items-center gap-1 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full;
 }
 
-.user-menu-trigger {
-  @apply flex items-center gap-2 rounded-lg px-2 py-1;
+/* ── User showcase chip ── */
+.user-chip {
+  @apply flex items-center gap-2.5 h-11 pl-1.5 pr-2.5 rounded-full cursor-pointer
+         border border-transparent
+         hover:bg-gray-50 dark:hover:bg-white/5
+         hover:border-gray-200 dark:hover:border-white/10
+         transition-all duration-200;
 
   .user-avatar {
-    @apply w-8 h-8 rounded-full bg-primary-600 text-white text-xs font-bold
-           flex items-center justify-center shrink-0;
+    @apply relative w-8 h-8 rounded-full text-white text-xs font-bold
+           flex items-center justify-center shrink-0
+           bg-gradient-to-br from-primary-500 to-primary-700
+           ring-2 ring-white dark:ring-surface-dark
+           shadow-sm;
+  }
+
+  .user-status-dot {
+    @apply absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500
+           ring-2 ring-white dark:ring-surface-dark;
+  }
+
+  .user-info {
+    @apply hidden sm:flex flex-col items-start leading-tight min-w-0;
   }
 
   .user-name {
-    @apply text-sm font-medium text-gray-700 max-w-[120px] truncate;
+    @apply text-sm font-semibold text-gray-800 dark:text-white max-w-[140px] truncate;
   }
+
+  .user-role {
+    @apply text-[11px] font-medium text-gray-400 dark:text-white/40 max-w-[140px] truncate;
+  }
+
+  .user-caret {
+    @apply text-gray-400 dark:text-white/40 shrink-0 transition-transform duration-200;
+    font-size: 18px; width: 18px; height: 18px;
+  }
+
+  &[aria-expanded='true'] .user-caret {
+    transform: rotate(180deg);
+  }
+}
+
+/* ── User dropdown menu ── */
+::ng-deep .user-menu-panel {
+  .mat-mdc-menu-content { @apply pt-0; }
+}
+
+.user-menu-header {
+  @apply flex items-center gap-3 px-4 py-3.5 cursor-default
+         bg-gradient-to-br from-primary-50 to-transparent dark:from-primary-900/20;
+
+  .user-menu-avatar {
+    @apply w-11 h-11 rounded-xl text-white text-sm font-bold
+           flex items-center justify-center shrink-0
+           bg-gradient-to-br from-primary-500 to-primary-700 shadow-sm;
+  }
+  .user-menu-meta { @apply min-w-0; }
+  .user-menu-name { @apply text-sm font-semibold text-gray-900 dark:text-white truncate; }
+  .user-menu-role {
+    @apply inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide
+           bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300;
+  }
+  .user-menu-biz {
+    @apply flex items-center gap-1 mt-1.5 text-xs text-gray-500 dark:text-white/50 truncate;
+    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  }
+}
+
+.signout-item {
+  mat-icon, span { @apply text-red-600 dark:text-red-400; }
 }
 
 /* ── Business switcher ── */

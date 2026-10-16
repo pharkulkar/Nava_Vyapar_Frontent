@@ -1,6 +1,6 @@
 import type { Routes } from '@angular/router';
 import { FeaturePlaceholderComponent } from '../../shared/components/feature-placeholder.component';
-import { roleGuard } from '../../core/auth/guards/role.guard';
+import { ProfileComponent } from './profile.component';
 
 export const SETTINGS_ROUTES: Routes = [
   {
@@ -9,5 +9,5 @@ export const SETTINGS_ROUTES: Routes = [
     component: FeaturePlaceholderComponent,
     data: { title: 'Settings', icon: 'settings' },
   },
-  { path: 'profile', component: FeaturePlaceholderComponent, data: { title: 'Profile', icon: 'person' } },
+  { path: 'profile', component: ProfileComponent },
 ];

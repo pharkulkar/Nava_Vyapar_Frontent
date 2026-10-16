@@ -241,7 +241,7 @@ export class InvoiceFormComponent implements OnInit {
           sellingPrice:  Number(p.price),
           taxRate:       Number(p.gstRate),
           unit:          p.uom,
-          stockQuantity: 0,
+          stockQuantity: p.currentStock ?? 0,
           status:        'active',
         }));
         this._filterProducts(this.productSearchQuery);
@@ -472,15 +472,13 @@ export class InvoiceFormComponent implements OnInit {
       this.invoiceService.putInvoice(Number(this.editId), payload).subscribe({
         next: (res: any) => {
           this.toast.success(res.displayMessage ?? res.statusMessage ?? 'Invoice updated successfully');
-          this.saving.set(false);
-          this.goBack();
+          this._onSaveSuccess();
         },
         error: (err: any) => {
           const body = err?.error;
           if (body?.status === 'success') {
             this.toast.success(body.displayMessage ?? 'Invoice updated');
-            this.saving.set(false);
-            this.goBack();
+            this._onSaveSuccess();
             return;
           }
           this.toast.error(body?.displayMessage ?? body?.message ?? 'Failed to update invoice');
@@ -491,15 +489,13 @@ export class InvoiceFormComponent implements OnInit {
       this.invoiceService.createInvoice(payload).subscribe({
         next: res => {
           this.toast.success(res.displayMessage ?? res.statusMessage ?? 'Invoice created successfully');
-          this.saving.set(false);
-          this.goBack();
+          this._onSaveSuccess();
         },
         error: (err: any) => {
           const body = err?.error;
           if (body?.status === 'success') {
             this.toast.success(body.displayMessage ?? 'Invoice saved');
-            this.saving.set(false);
-            this.goBack();
+            this._onSaveSuccess();
             return;
           }
           this.toast.error(body?.displayMessage ?? body?.message ?? 'Failed to save invoice');
@@ -507,6 +503,15 @@ export class InvoiceFormComponent implements OnInit {
         },
       });
     }
+  }
+
+  /** Common success handling: an invoice changes stock levels, so bust the
+   *  product cache before leaving — otherwise the products page shows stale
+   *  quantities until a manual refresh. */
+  private _onSaveSuccess(): void {
+    this.productCache.invalidate();
+    this.saving.set(false);
+    this.goBack();
   }
 
   goBack(): void {
