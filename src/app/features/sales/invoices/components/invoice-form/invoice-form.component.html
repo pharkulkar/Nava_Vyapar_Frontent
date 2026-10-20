@@ -322,6 +322,18 @@
           <span>{{ totals().grandTotal | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
         </div>
 
+        <!-- Partial payment breakdown -->
+        <ng-container *ngIf="totals().isPartial">
+          <div class="totals-row received-row">
+            <span>Advance Received</span>
+            <span>{{ totals().received | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
+          </div>
+          <div class="totals-row balance-row">
+            <span>Balance Due</span>
+            <span>{{ totals().balanceDue | currency: 'INR' : 'symbol' : '1.2-2' }}</span>
+          </div>
+        </ng-container>
+
         <div class="items-count">
           <mat-icon>shopping_cart</mat-icon>
           {{ lineItems().length }} item{{ lineItems().length !== 1 ? 's' : '' }}, {{ totalQty() }} unit{{
@@ -361,6 +373,31 @@
           <div class="discount-preview" *ngIf="totals().invDiscount > 0">
             <mat-icon>check_circle</mat-icon>
             <span>Saving <strong>₹{{ totals().invDiscount | number:'1.2-2' }}</strong> · Grand Total: <strong>₹{{ totals().grandTotal | number:'1.2-2' }}</strong></span>
+          </div>
+        </div>
+
+        <!-- Advance / partial payment -->
+        <div class="discount-widget">
+          <p class="discount-widget-label">
+            <mat-icon>payments</mat-icon>
+            Advance Payment
+          </p>
+          <div class="discount-input-row">
+            <div class="field-control disc-input-wrap">
+              <span class="disc-symbol">₹</span>
+              <input class="field-input" type="number" min="0"
+                     [max]="totals().grandTotal"
+                     [(ngModel)]="advancePayment"
+                     placeholder="Leave empty for full payment" />
+            </div>
+          </div>
+          <div class="advance-preview partial" *ngIf="totals().isPartial">
+            <mat-icon>schedule</mat-icon>
+            <span>Partial · Balance due <strong>₹{{ totals().balanceDue | number:'1.2-2' }}</strong></span>
+          </div>
+          <div class="advance-preview full" *ngIf="!totals().isPartial && lineItems().length > 0">
+            <mat-icon>check_circle</mat-icon>
+            <span>Paid in full</span>
           </div>
         </div>
 

@@ -651,6 +651,17 @@
     color: var(--mat-sys-on-surface);
     padding: 10px 0 4px;
   }
+
+  &.received-row {
+    color: #16a34a;
+    font-weight: 600;
+  }
+
+  &.balance-row {
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
 }
 
 .tax-breakdown {
@@ -797,4 +808,42 @@
 /* Invoice discount line in totals */
 .inv-discount {
   .disc-saving { @apply text-green-600 dark:text-green-400 font-semibold; }
+}
+
+/* Advance / partial payment preview */
+.advance-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+
+  mat-icon { font-size: 15px; width: 15px; height: 15px; flex-shrink: 0; }
+  strong { font-weight: 700; }
+
+  &.partial {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #c2410c;
+  }
+  &.full {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #15803d;
+  }
+}
+
+:host-context(html.dark) .advance-preview {
+  &.partial {
+    background: rgba(194, 65, 12, 0.15);
+    border-color: rgba(194, 65, 12, 0.35);
+    color: #fdba74;
+  }
+  &.full {
+    background: rgba(21, 128, 61, 0.15);
+    border-color: rgba(21, 128, 61, 0.35);
+    color: #86efac;
+  }
 }

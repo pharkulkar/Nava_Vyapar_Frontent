@@ -116,6 +116,13 @@ export class InvoiceFormComponent implements OnInit {
   get discountValue():  number { return this._discountValue(); }
   set discountValue(v: number) { this._discountValue.set(v); this.form.discountValue = v; }
 
+  // Advance / partial payment. 0 (default) means "pay in full" — the customer
+  // pays the whole grand total, exactly as the current flow does. A value below
+  // the grand total makes it a partial payment, leaving a balance due.
+  private readonly _advancePayment = signal<number>(0);
+  get advancePayment(): number { return this._advancePayment(); }
+  set advancePayment(v: number) { this._advancePayment.set(v); }
+
   protected readonly totals = computed(() => {
     const items = this.lineItems();
     const lineSubtotal    = items.reduce((s, i) => s + i.subtotal, 0);
@@ -133,6 +140,20 @@ export class InvoiceFormComponent implements OnInit {
 
     const grandTotal = +(beforeInvDisc - invDiscount).toFixed(2);
 
+    // ── Payment / partial-payment handling ──────────────────────────────────
+    // advance = 0 means "full payment" (current default). Any positive advance
+    // below grandTotal is a partial payment. We clamp between 0 and grandTotal.
+    const advance = this._advancePayment() || 0;
+    const isPartial = advance > 0 && advance < grandTotal;
+    // received sent to the API:
+    //   - full payment (advance 0 or >= grandTotal) → grandTotal (keeps status "Paid"
+    //     and matches the exact rounded total so no phantom residual balance appears)
+    //   - partial payment → the clamped advance amount
+    const received = isPartial
+      ? +Math.min(Math.max(advance, 0), grandTotal).toFixed(2)
+      : grandTotal;
+    const balanceDue = +(grandTotal - received).toFixed(2);
+
     return {
       subtotal:       lineSubtotal,
       lineDiscount,
@@ -140,6 +161,9 @@ export class InvoiceFormComponent implements OnInit {
       totalTax,
       invDiscount,
       grandTotal,
+      received,
+      balanceDue,
+      isPartial,
       // flat ₹ discount sent to API
       discountForApi: invDiscount,
     };
@@ -197,6 +221,14 @@ export class InvoiceFormComponent implements OnInit {
         // Sync discount signals so computed() reflects loaded values
         this._discountMode.set('flat');
         this._discountValue.set(Number(inv.discount) || 0);
+
+        // Restore partial payment: if the recorded `received` is below the
+        // invoice total, it was a partial payment — seed the advance field so
+        // the owner sees the prior advance and the balance due. Full payments
+        // leave the advance at 0 (the default "pay in full" state).
+        const recorded = Number(inv.received) || 0;
+        const invTotal = Number(inv.totalPrice) || 0;
+        this._advancePayment.set(recorded > 0 && recorded < invTotal ? recorded : 0);
 
         // Map ApiInvoiceItem → InvoiceLineItem
         const lineItems: InvoiceLineItem[] = (inv.items ?? []).map(item => {
@@ -458,13 +490,25 @@ export class InvoiceFormComponent implements OnInit {
     const itemsTotal = +items.reduce((s, i) => s + i.total, 0).toFixed(2);
     const payableTotal = +(itemsTotal - discountForApi).toFixed(2);
 
+    // ── Received amount ─────────────────────────────────────────────────────
+    // Default (no advance entered) → full payment: received === payableTotal,
+    // reconciled against the exact rounded figures so the backend marks it
+    // "Paid" with zero residual balance (current behavior, unchanged).
+    // If an advance below the payable total is entered → partial payment:
+    // send only that amount, clamped to [0, payableTotal], leaving a balance.
+    const advance = this._advancePayment() || 0;
+    const received =
+      advance > 0 && advance < payableTotal
+        ? +Math.min(Math.max(advance, 0), payableTotal).toFixed(2)
+        : payableTotal;
+
     const payload: ApiCreateInvoiceRequest = {
       businessId: String(this.store.selectedBusiness()?.id ?? ''),
       customerName:    this.form.customerName,
       customerMobile:  this.form.customerPhone,
       customerAddress: this.form.customerAddress,
       discount:        discountForApi,
-      received:        payableTotal,   // customer paid full amount after discount
+      received,   // full payableTotal, or the partial advance amount
       items,
     };
 
